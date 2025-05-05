@@ -1,0 +1,19 @@
+name = "contract-generator-worker"
+main = "src/index.ts"
+compatibility_date = "2023-05-05"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "contract_generator"
+database_id = "placeholder-id"
+
+# R2 Storage
+[[r2_buckets]]
+binding = "STORAGE"
+bucket_name = "contract-generator"
+
+# Queue for PDF conversion
+[[queues.producers]]
+queue = "pdf-conversion"
+binding = "PDF_QUEUE"
