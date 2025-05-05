@@ -1,0 +1,7 @@
+# Cloudflare Pages configuration
+[build]
+  command = "cd contract-generator && npm install && npm run build && npx @cloudflare/next-on-pages"
+  publish = "contract-generator/.vercel/output/static"
+  
+[build.environment]
+  NODE_VERSION = "20"

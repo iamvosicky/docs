@@ -1,0 +1,12 @@
+{
+  "name": "contract-generator-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "cd contract-generator && npm install && npm run build && npx @cloudflare/next-on-pages",
+    "pages:deploy": "cd contract-generator && npm install && npm run build && npx @cloudflare/next-on-pages && wrangler pages deploy contract-generator/.vercel/output/static"
+  },
+  "devDependencies": {
+    "wrangler": "^4.14.1"
+  }
+}
