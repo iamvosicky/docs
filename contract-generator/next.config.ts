@@ -14,6 +14,14 @@ const nextConfig: NextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    // Disable strict mode for dynamic APIs
+    serverActions: {
+      allowedOrigins: ["*"],
+    },
+  },
+  // Cloudflare Pages specific configuration
+  output: 'standalone',
 };
 
 export default nextConfig;

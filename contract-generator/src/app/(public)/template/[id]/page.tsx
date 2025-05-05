@@ -73,7 +73,18 @@ interface PageParams {
   id: string;
 }
 
-export default async function TemplatePage({ params }: { params: PageParams }) {
+// Generate static params for all known templates
+export function generateStaticParams() {
+  return [
+    { id: 'smlouva-o-dilo' },
+    { id: 'dohoda-o-provedeni-prace' },
+    { id: 'kupni-smlouva' },
+  ];
+}
+
+// Make the page component synchronous
+export default function TemplatePage({ params }: { params: PageParams }) {
+  // Access params directly since we're using generateStaticParams
   const template = getTemplateData(params.id);
 
   if (!template) {
