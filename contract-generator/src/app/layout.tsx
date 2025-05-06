@@ -27,11 +27,25 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
       >
-        <div className="relative flex min-h-screen flex-col">
+        <div className="relative flex min-h-screen flex-col bg-background">
           <Navbar />
-          <div className="flex-1">{children}</div>
+          <main className="flex-1">{children}</main>
+          <footer className="border-t py-6 md:py-8">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex flex-col sm:flex-row justify-between items-center">
+                <p className="text-sm text-muted-foreground">
+                  &copy; {new Date().getFullYear()} Contract Generator. All rights reserved.
+                </p>
+                <div className="mt-4 sm:mt-0">
+                  <p className="text-sm text-muted-foreground">
+                    Powered by Next.js and Cloudflare
+                  </p>
+                </div>
+              </div>
+            </div>
+          </footer>
         </div>
         <Sonner />
       </body>

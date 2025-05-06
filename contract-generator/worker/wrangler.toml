@@ -6,12 +6,21 @@ compatibility_date = "2023-05-05"
 [[d1_databases]]
 binding = "DB"
 database_name = "contract_generator"
-database_id = "placeholder-id"
+database_id = "placeholder-id" # Replace with your actual database ID from Cloudflare dashboard
+
+# Local development is handled automatically by Wrangler
 
 # R2 Storage
 [[r2_buckets]]
 binding = "STORAGE"
 bucket_name = "contract-generator"
+# Add your account_id below (find it in the Cloudflare dashboard)
+# account_id = "your-account-id"
+
+# Local development settings
+[dev]
+port = 8787
+local_protocol = "http"
 
 # Queue for PDF conversion
 [[queues.producers]]
