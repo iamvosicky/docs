@@ -8,87 +8,100 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // This would be fetched from the API in a real implementation
 const getTemplateData = (id: string) => {
-  // Define templates with proper typing
-  interface TemplateData {
-    [key: string]: {
-      id: string;
-      name: string;
-      description: string;
-      schema: {
-        type: string;
-        properties: {
-          [key: string]: { type: string; title: string };
+  if (!id) return null;
+
+  try {
+    // Define templates with proper typing
+    interface TemplateData {
+      [key: string]: {
+        id: string;
+        name: string;
+        description: string;
+        schema: {
+          type: string;
+          properties: {
+            [key: string]: { type: string; title: string };
+          };
+          required: string[];
         };
-        required: string[];
       };
-    };
-  }
-
-  const templates: TemplateData = {
-    "smlouva-o-dilo": {
-      id: "smlouva-o-dilo",
-      name: "Smlouva o dílo",
-      description: "B2B Smlouva o dílo (vzor)",
-      schema: {
-        type: "object",
-        properties: {
-          KUP_JMENO: { type: "string", title: "Jméno kupujícího" },
-          KUP_ADRESA: { type: "string", title: "Adresa kupujícího" },
-          KUP_ICO: { type: "string", title: "IČO kupujícího" },
-          PROD_JMENO: { type: "string", title: "Jméno prodávajícího" },
-          PROD_ADRESA: { type: "string", title: "Adresa prodávajícího" },
-          PROD_ICO: { type: "string", title: "IČO prodávajícího" },
-          PREDMET_DILA: { type: "string", title: "Předmět díla" },
-          CENA: { type: "string", title: "Cena díla" },
-          DATUM_PREDANI: { type: "string", title: "Datum předání" }
-        },
-        required: ["KUP_JMENO", "KUP_ADRESA", "KUP_ICO", "PROD_JMENO", "PROD_ADRESA", "PROD_ICO", "PREDMET_DILA", "CENA", "DATUM_PREDANI"]
-      }
-    },
-    "dohoda-o-provedeni-prace": {
-      id: "dohoda-o-provedeni-prace",
-      name: "Dohoda o provedení práce",
-      description: "DPP (zaměstnanec ≤300 hod/rok)",
-      schema: {
-        type: "object",
-        properties: {
-          ZAM_JMENO: { type: "string", title: "Jméno zaměstnavatele" },
-          ZAM_ADRESA: { type: "string", title: "Adresa zaměstnavatele" },
-          ZAM_ICO: { type: "string", title: "IČO zaměstnavatele" },
-          PRAC_JMENO: { type: "string", title: "Jméno pracovníka" },
-          PRAC_ADRESA: { type: "string", title: "Adresa pracovníka" },
-          PRAC_RC: { type: "string", title: "Rodné číslo pracovníka" },
-          POPIS_PRACE: { type: "string", title: "Popis práce" },
-          ODMENA: { type: "string", title: "Odměna" },
-          DATUM_OD: { type: "string", title: "Datum od" },
-          DATUM_DO: { type: "string", title: "Datum do" }
-        },
-        required: ["ZAM_JMENO", "ZAM_ADRESA", "ZAM_ICO", "PRAC_JMENO", "PRAC_ADRESA", "PRAC_RC", "POPIS_PRACE", "ODMENA", "DATUM_OD", "DATUM_DO"]
-      }
-    },
-    "kupni-smlouva": {
-      id: "kupni-smlouva",
-      name: "Kupní smlouva",
-      description: "Standardní kupní smlouva na movitou věc",
-      schema: {
-        type: "object",
-        properties: {
-          KUP_JMENO: { type: "string", title: "Jméno kupujícího" },
-          KUP_ADRESA: { type: "string", title: "Adresa kupujícího" },
-          KUP_ICO: { type: "string", title: "IČO kupujícího" },
-          PROD_JMENO: { type: "string", title: "Jméno prodávajícího" },
-          PROD_ADRESA: { type: "string", title: "Adresa prodávajícího" },
-          PROD_ICO: { type: "string", title: "IČO prodávajícího" },
-          PREDMET_PRODEJE: { type: "string", title: "Předmět prodeje" },
-          CENA: { type: "string", title: "Cena" },
-          DATUM_PREDANI: { type: "string", title: "Datum předání" }
-        },
-        required: ["KUP_JMENO", "KUP_ADRESA", "KUP_ICO", "PROD_JMENO", "PROD_ADRESA", "PROD_ICO", "PREDMET_PRODEJE", "CENA", "DATUM_PREDANI"]
-      }
     }
-  };
 
-  return templates[id] || null;
+    const templates: TemplateData = {
+      "smlouva-o-dilo": {
+        id: "smlouva-o-dilo",
+        name: "Smlouva o dílo",
+        description: "B2B Smlouva o dílo (vzor)",
+        schema: {
+          type: "object",
+          properties: {
+            KUP_JMENO: { type: "string", title: "Jméno kupujícího" },
+            KUP_ADRESA: { type: "string", title: "Adresa kupujícího" },
+            KUP_ICO: { type: "string", title: "IČO kupujícího" },
+            PROD_JMENO: { type: "string", title: "Jméno prodávajícího" },
+            PROD_ADRESA: { type: "string", title: "Adresa prodávajícího" },
+            PROD_ICO: { type: "string", title: "IČO prodávajícího" },
+            PREDMET_DILA: { type: "string", title: "Předmět díla" },
+            CENA: { type: "string", title: "Cena díla" },
+            DATUM_PREDANI: { type: "string", title: "Datum předání" }
+          },
+          required: ["KUP_JMENO", "KUP_ADRESA", "KUP_ICO", "PROD_JMENO", "PROD_ADRESA", "PROD_ICO", "PREDMET_DILA", "CENA", "DATUM_PREDANI"]
+        }
+      },
+      "dohoda-o-provedeni-prace": {
+        id: "dohoda-o-provedeni-prace",
+        name: "Dohoda o provedení práce",
+        description: "DPP (zaměstnanec ≤300 hod/rok)",
+        schema: {
+          type: "object",
+          properties: {
+            ZAM_JMENO: { type: "string", title: "Jméno zaměstnavatele" },
+            ZAM_ADRESA: { type: "string", title: "Adresa zaměstnavatele" },
+            ZAM_ICO: { type: "string", title: "IČO zaměstnavatele" },
+            PRAC_JMENO: { type: "string", title: "Jméno pracovníka" },
+            PRAC_ADRESA: { type: "string", title: "Adresa pracovníka" },
+            PRAC_RC: { type: "string", title: "Rodné číslo pracovníka" },
+            POPIS_PRACE: { type: "string", title: "Popis práce" },
+            ODMENA: { type: "string", title: "Odměna" },
+            DATUM_OD: { type: "string", title: "Datum od" },
+            DATUM_DO: { type: "string", title: "Datum do" }
+          },
+          required: ["ZAM_JMENO", "ZAM_ADRESA", "ZAM_ICO", "PRAC_JMENO", "PRAC_ADRESA", "PRAC_RC", "POPIS_PRACE", "ODMENA", "DATUM_OD", "DATUM_DO"]
+        }
+      },
+      "kupni-smlouva": {
+        id: "kupni-smlouva",
+        name: "Kupní smlouva",
+        description: "Standardní kupní smlouva na movitou věc",
+        schema: {
+          type: "object",
+          properties: {
+            KUP_JMENO: { type: "string", title: "Jméno kupujícího" },
+            KUP_ADRESA: { type: "string", title: "Adresa kupujícího" },
+            KUP_ICO: { type: "string", title: "IČO kupujícího" },
+            PROD_JMENO: { type: "string", title: "Jméno prodávajícího" },
+            PROD_ADRESA: { type: "string", title: "Adresa prodávajícího" },
+            PROD_ICO: { type: "string", title: "IČO prodávajícího" },
+            PREDMET_PRODEJE: { type: "string", title: "Předmět prodeje" },
+            CENA: { type: "string", title: "Cena" },
+            DATUM_PREDANI: { type: "string", title: "Datum předání" }
+          },
+          required: ["KUP_JMENO", "KUP_ADRESA", "KUP_ICO", "PROD_JMENO", "PROD_ADRESA", "PROD_ICO", "PREDMET_PRODEJE", "CENA", "DATUM_PREDANI"]
+        }
+      }
+    };
+
+    // Check if the template exists
+    if (templates[id]) {
+      return templates[id];
+    } else {
+      console.warn(`Template with ID "${id}" not found`);
+      return null;
+    }
+  } catch (error) {
+    console.error(`Error getting template data for ID "${id}":`, error);
+    return null;
+  }
 };
 
 // Define template type for better type safety
@@ -105,35 +118,66 @@ interface Template {
 
 export default function MultiDocumentFormPage() {
   const searchParams = useSearchParams();
-  const templateIds = searchParams.get('templates')?.split(',') || [];
+  // Get template IDs from URL and ensure they're valid
+  const rawTemplateIds = searchParams.get('templates') || '';
+  const templateIds = rawTemplateIds ? rawTemplateIds.split(',').filter(Boolean) : [];
+
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('form');
 
+  // Load templates on component mount or when template IDs change
   useEffect(() => {
-    // Simulate API call to fetch template data
-    const fetchTemplates = async () => {
-      setLoading(true);
-      try {
-        // In a real app, this would be an API call
-        const templateData = templateIds
-          .map(id => getTemplateData(id))
-          .filter((template): template is Template => template !== null);
+    // Flag to prevent state updates after component unmount
+    let isMounted = true;
 
-        setTemplates(templateData);
-      } catch (error) {
-        console.error("Error fetching templates:", error);
-      } finally {
+    // Set initial loading state
+    if (isMounted) {
+      setLoading(true);
+    }
+
+    // If no template IDs, set empty templates and stop loading
+    if (templateIds.length === 0) {
+      if (isMounted) {
+        setTemplates([]);
         setLoading(false);
       }
-    };
-
-    if (templateIds.length > 0) {
-      fetchTemplates();
-    } else {
-      setLoading(false);
+      return;
     }
-  }, [templateIds]);
+
+    // Process templates synchronously to avoid race conditions
+    try {
+      // Get template data for each ID
+      const templateData: Template[] = [];
+
+      // Process each template ID
+      for (const id of templateIds) {
+        const template = getTemplateData(id);
+        if (template) {
+          templateData.push(template);
+        }
+      }
+
+      // Update state if component is still mounted
+      if (isMounted) {
+        setTemplates(templateData);
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Error processing templates:", error);
+
+      // Update state if component is still mounted
+      if (isMounted) {
+        setTemplates([]);
+        setLoading(false);
+      }
+    }
+
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      isMounted = false;
+    };
+  }, [templateIds.join(',')]);
 
   if (templateIds.length === 0) {
     return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,6 +11,13 @@ import { Card } from "@/components/ui/card";
 import { Sonner, toast } from "@/components/ui/sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { CompanyProfileSelector } from "@/components/company-profile-selector";
+import { FormTemplateSelector } from "@/components/form-template-selector";
+import { SaveFormTemplateDialog } from "@/components/save-form-template-dialog";
+import { useCompanyProfileStore } from "@/lib/company-profile-store";
+import { useFormTemplateStore } from "@/lib/form-template-store";
+import { FormTemplate } from "@/types/form-template";
+import { companyFieldMapping } from "@/types/company-profile";
 
 // Define JSON schema property type
 interface JsonSchemaProperty {
@@ -123,6 +130,16 @@ interface MultiDocumentFormProps {
 export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [downloadLinks, setDownloadLinks] = useState<Record<string, { docx?: string; pdf?: string }>>({});
+  const [usedCompanyProfiles, setUsedCompanyProfiles] = useState<{
+    buyer?: string;
+    seller?: string;
+    employer?: string;
+    employee?: string;
+  }>({});
+
+  // Get company profiles and form templates
+  const { getProfileById } = useCompanyProfileStore();
+  const { getDefaultTemplate } = useFormTemplateStore();
 
   // Merge schemas from all templates
   const { mergedProperties, fieldToTemplateMap } = mergeSchemas(templates);
@@ -146,6 +163,86 @@ export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
     resolver: zodResolver(zodSchema),
     defaultValues: defaultValues,
   });
+
+  // Check for default form template on initial load
+  useEffect(() => {
+    // Wait for the form to be fully initialized before applying the template
+    const timer = setTimeout(() => {
+      try {
+        const documentTemplateIds = templates.map(t => t.id);
+        const defaultTemplate = getDefaultTemplate(documentTemplateIds);
+
+        if (defaultTemplate) {
+          applyFormTemplate(defaultTemplate);
+        }
+      } catch (error) {
+        console.error("Error applying default template:", error);
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Function to apply company profile data to form
+  const applyCompanyProfile = (profileId: string, groupKey: string) => {
+    const profile = getProfileById(profileId);
+    if (!profile) return;
+
+    const mappings = companyFieldMapping[profile.type];
+    if (!mappings) return;
+
+    // Update form values with profile data
+    Object.entries(mappings).forEach(([profileField, formField]) => {
+      if (profile.data[profileField as keyof typeof profile.data] && form.getValues(formField) !== undefined) {
+        form.setValue(formField, profile.data[profileField as keyof typeof profile.data] as string);
+      }
+    });
+
+    // Update used company profiles
+    setUsedCompanyProfiles(prev => ({
+      ...prev,
+      [profile.type]: profileId
+    }));
+
+    toast.success(`Profil ${profile.name} byl použit`);
+  };
+
+  // Function to apply form template
+  const applyFormTemplate = (template: FormTemplate) => {
+    try {
+      // Apply form values - only for fields that exist in the current form
+      const currentFields = Object.keys(form.getValues());
+
+      Object.entries(template.values).forEach(([field, value]) => {
+        if (currentFields.includes(field)) {
+          form.setValue(field, value);
+        }
+      });
+
+      // Apply company profiles
+      if (template.companyProfiles.buyer) {
+        applyCompanyProfile(template.companyProfiles.buyer, 'KUP');
+      }
+
+      if (template.companyProfiles.seller) {
+        applyCompanyProfile(template.companyProfiles.seller, 'PROD');
+      }
+
+      if (template.companyProfiles.employer) {
+        applyCompanyProfile(template.companyProfiles.employer, 'ZAM');
+      }
+
+      if (template.companyProfiles.employee) {
+        applyCompanyProfile(template.companyProfiles.employee, 'PRAC');
+      }
+
+      toast.success(`Šablona "${template.name}" byla použita`);
+    } catch (error) {
+      console.error("Error applying form template:", error);
+      toast.error("Chyba při aplikaci šablony. Zkuste to prosím znovu.");
+    }
+  };
 
   // Handle form submission
   const onSubmit = async (data: FormSchema) => {
@@ -189,6 +286,12 @@ export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
 
   return (
     <>
+      {/* Form Template Selector */}
+      <FormTemplateSelector
+        documentTemplateIds={templates.map(t => t.id)}
+        onSelect={applyFormTemplate}
+      />
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <Accordion type="multiple" defaultValue={Object.keys(fieldGroups)}>
@@ -202,6 +305,14 @@ export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
                     {getGroupName(groupKey)}
                   </AccordionTrigger>
                   <AccordionContent>
+                    {/* Company Profile Selector - only show for company-related groups */}
+                    {['KUP', 'PROD', 'ZAM', 'PRAC'].includes(groupKey) && (
+                      <CompanyProfileSelector
+                        groupKey={groupKey}
+                        onSelect={(profileId) => applyCompanyProfile(profileId, groupKey)}
+                      />
+                    )}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                       {Object.entries(fields).map(([key, value]) => (
                         <FormField
@@ -235,9 +346,17 @@ export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
             })}
           </Accordion>
 
-          <Button type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? "Generating..." : `Generate ${templates.length} Documents`}
-          </Button>
+          <div className="flex items-center">
+            <Button type="submit" disabled={isSubmitting} className="w-full">
+              {isSubmitting ? "Generating..." : `Generate ${templates.length} Documents`}
+            </Button>
+
+            <SaveFormTemplateDialog
+              documentTemplateIds={templates.map(t => t.id)}
+              formValues={form.getValues()}
+              companyProfiles={usedCompanyProfiles}
+            />
+          </div>
         </form>
       </Form>
 

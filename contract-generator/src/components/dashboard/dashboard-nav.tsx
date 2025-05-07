@@ -15,6 +15,16 @@ const navItems = [
     icon: "📁",
   },
   {
+    title: "Company Profiles",
+    href: "/dashboard/profiles",
+    icon: "🏢",
+  },
+  {
+    title: "Form Templates",
+    href: "/dashboard/form-templates",
+    icon: "📝",
+  },
+  {
     title: "Users",
     href: "/dashboard/users",
     icon: "👥",
