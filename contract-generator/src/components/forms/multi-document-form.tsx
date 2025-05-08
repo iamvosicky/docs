@@ -18,6 +18,7 @@ import { useCompanyProfileStore } from "@/lib/company-profile-store";
 import { useFormTemplateStore } from "@/lib/form-template-store";
 import { FormTemplate } from "@/types/form-template";
 import { companyFieldMapping } from "@/types/company-profile";
+import { generatePDF, generateDOCX, downloadDocument } from "@/lib/document-generator";
 
 // Define JSON schema property type
 interface JsonSchemaProperty {
@@ -249,27 +250,49 @@ export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
     setIsSubmitting(true);
 
     try {
-      // This would be an actual API call in a real implementation
-      console.log("Submitting form data:", data);
-
-      // Simulate API response
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Set mock download links for each template
-      const links: Record<string, { docx?: string; pdf?: string }> = {};
-      templates.forEach(template => {
-        links[template.id] = {
-          docx: `#generated-${template.id}.docx`,
-          pdf: `#generated-${template.id}.pdf`,
-        };
+      // Call the API to generate documents
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          templates: templates.map(t => t.id),
+          formData: data,
+        }),
       });
 
-      setDownloadLinks(links);
+      if (!response.ok) {
+        let errorMessage = 'Failed to generate documents';
+        try {
+          const errorData = await response.json();
+          if (errorData && errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (e) {
+          console.error('Error parsing error response:', e);
+        }
+        throw new Error(errorMessage);
+      }
 
-      toast.success(`${templates.length} documents generated successfully!`);
+      let result;
+      try {
+        result = await response.json();
+      } catch (e) {
+        console.error('Error parsing response:', e);
+        throw new Error('Invalid response from server');
+      }
+
+      if (result.success && result.links) {
+        // Set the download links from the API response
+        setDownloadLinks(result.links);
+        toast.success(`${templates.length} documents generated successfully!`);
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error) {
       console.error("Error generating documents:", error);
-      toast.error("Failed to generate documents. Please try again.");
+      toast.error(error instanceof Error ? error.message : "Failed to generate documents. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -368,16 +391,33 @@ export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
               const links = downloadLinks[template.id];
               if (!links) return null;
 
+              // Get template name
+              const templateNames: Record<string, string> = {
+                'smlouva-o-dilo': 'Smlouva o dílo',
+                'dohoda-o-provedeni-prace': 'Dohoda o provedení práce',
+                'kupni-smlouva': 'Kupní smlouva'
+              };
+
+              const templateName = templateNames[template.id] || template.id;
+
               return (
                 <div key={template.id} className="border-b pb-4 last:border-0">
-                  <h3 className="font-medium mb-2">{template.name}</h3>
+                  <h3 className="font-medium mb-2">{templateName}</h3>
                   <div className="flex flex-col sm:flex-row gap-3">
-                    <Button asChild variant="outline" size="sm">
-                      <a href={links.docx} download>Download DOCX</a>
-                    </Button>
-                    <Button asChild size="sm">
-                      <a href={links.pdf} download>Download PDF</a>
-                    </Button>
+                    {links.docx && (
+                      <Button asChild variant="outline" size="sm">
+                        <a href={links.docx} download={`${templateName}.docx`}>
+                          Download DOCX
+                        </a>
+                      </Button>
+                    )}
+                    {links.pdf && (
+                      <Button asChild size="sm">
+                        <a href={links.pdf} download={`${templateName}.pdf`}>
+                          Download PDF
+                        </a>
+                      </Button>
+                    )}
                   </div>
                 </div>
               );

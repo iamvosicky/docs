@@ -50,7 +50,7 @@ export function TemplateCatalog() {
           <CardFooter className="pt-4">
             <Button asChild className="w-full">
               <Link href={`/template/${template.id}`}>
-                Use Template
+                Použít dokument
               </Link>
             </Button>
           </CardFooter>

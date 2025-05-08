@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { UseCaseShortcuts } from "@/components/use-case-shortcuts";
 
 // Mock data for templates - will be replaced with API data
 const templates = [
@@ -41,6 +42,11 @@ export default function MultiDocumentPage() {
     );
   };
 
+  const handleSelectUseCase = (templateIds: string[]) => {
+    // Set the selected templates to the ones from the use case
+    setSelectedTemplates(templateIds);
+  };
+
   const handleContinue = () => {
     if (selectedTemplates.length === 0) {
       return;
@@ -70,16 +76,24 @@ export default function MultiDocumentPage() {
             >
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
-            Back to home
+            Zpět na hlavní stránku
           </a>
-          <h1 className="text-4xl font-bold mb-3">Multi-Document Generator</h1>
+          <h1 className="text-4xl font-bold mb-3">Generátor více dokumentů</h1>
           <p className="text-lg text-muted-foreground mb-6">
-            Select multiple document templates to generate at once with a single form.
+            Vyberte více dokumentů pro generování najednou pomocí jednoho formuláře.
           </p>
         </div>
 
+        {/* Use Case Shortcuts - Quick selection of predefined document sets */}
         <div className="bg-card p-8 rounded-lg border shadow-sm mb-8">
-          <h2 className="text-2xl font-semibold mb-6">Select Templates</h2>
+          <UseCaseShortcuts
+            onSelectUseCase={handleSelectUseCase}
+            selectedTemplateIds={selectedTemplates}
+          />
+        </div>
+
+        <div className="bg-card p-8 rounded-lg border shadow-sm mb-8">
+          <h2 className="text-2xl font-semibold mb-6">Vyberte dokumenty</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {templates.map((template) => (
               <Card
@@ -120,14 +134,15 @@ export default function MultiDocumentPage() {
 
         <div className="flex justify-between items-center">
           <p className="text-sm text-muted-foreground">
-            {selectedTemplates.length} template{selectedTemplates.length !== 1 ? 's' : ''} selected
+            {selectedTemplates.length} {selectedTemplates.length === 1 ? 'dokument vybrán' :
+              selectedTemplates.length >= 2 && selectedTemplates.length <= 4 ? 'dokumenty vybrány' : 'dokumentů vybráno'}
           </p>
           <Button
             size="lg"
             onClick={handleContinue}
             disabled={selectedTemplates.length === 0}
           >
-            Continue
+            Pokračovat
           </Button>
         </div>
       </div>

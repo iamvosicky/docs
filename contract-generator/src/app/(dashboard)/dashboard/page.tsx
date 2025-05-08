@@ -4,9 +4,9 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <div className="mb-2">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">Administrace</h1>
         <p className="text-muted-foreground text-lg">
-          Welcome to the admin dashboard for the Contract Generation Platform.
+          Vítejte v administraci platformy pro generování smluv.
         </p>
       </div>
 
@@ -14,7 +14,7 @@ export default function DashboardPage() {
         <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Templates
+              Celkem šablon
             </CardTitle>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -39,14 +39,14 @@ export default function DashboardPage() {
           <CardContent>
             <div className="text-3xl font-bold">3</div>
             <p className="text-sm text-muted-foreground mt-1">
-              Active templates available
+              Aktivních dostupných šablon
             </p>
           </CardContent>
         </Card>
         <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Generated Documents
+              Vygenerované dokumenty
             </CardTitle>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -64,13 +64,13 @@ export default function DashboardPage() {
           <CardContent>
             <div className="text-3xl font-bold">0</div>
             <p className="text-sm text-muted-foreground mt-1">
-              Documents generated this month
+              Dokumentů vygenerovaných tento měsíc
             </p>
           </CardContent>
         </Card>
         <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+            <CardTitle className="text-sm font-medium">Aktivní uživatelé</CardTitle>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -89,14 +89,14 @@ export default function DashboardPage() {
           <CardContent>
             <div className="text-3xl font-bold">1</div>
             <p className="text-sm text-muted-foreground mt-1">
-              Active users in the system
+              Aktivních uživatelů v systému
             </p>
           </CardContent>
         </Card>
         <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              System Status
+              Stav systému
             </CardTitle>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -112,9 +112,9 @@ export default function DashboardPage() {
             </svg>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">Healthy</div>
+            <div className="text-3xl font-bold">V pořádku</div>
             <p className="text-sm text-muted-foreground mt-1">
-              All services operational
+              Všechny služby jsou funkční
             </p>
           </CardContent>
         </Card>

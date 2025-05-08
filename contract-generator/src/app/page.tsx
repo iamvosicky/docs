@@ -1,6 +1,7 @@
 "use client";
 
 import { TemplateCatalog } from "@/components/template-catalog";
+import { HomeQuickButtons } from "@/components/home-quick-buttons";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -10,9 +11,9 @@ export default function Home() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold mb-2 text-center sm:text-left">Contract Templates</h1>
+            <h1 className="text-4xl font-bold mb-2 text-center sm:text-left">Právní dokumenty</h1>
             <p className="text-muted-foreground text-center sm:text-left text-lg">
-              Select a template to generate a customized legal document
+              Vyberte dokument pro vygenerování vlastního právního dokumentu
             </p>
           </div>
           <div className="mt-4 sm:mt-0 flex justify-center sm:justify-end">
@@ -37,11 +38,16 @@ export default function Home() {
                   <path d="M16 21v-4" />
                   <path d="M12 21v-4" />
                 </svg>
-                Multi-Document Generator
+                Generátor více dokumentů
               </Link>
             </Button>
           </div>
         </div>
+
+        {/* Quick Buttons Section */}
+        <HomeQuickButtons />
+
+        {/* Template Catalog Section */}
         <TemplateCatalog />
       </div>
     </div>

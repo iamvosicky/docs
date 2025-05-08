@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Smlouva o dílo</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.5; }
+    h1 { text-align: center; margin-bottom: 30px; }
+    h2 { margin-top: 20px; margin-bottom: 10px; }
+    .date { text-align: right; margin-bottom: 30px; }
+    .section { margin-bottom: 20px; }
+    .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
+    .signature { width: 45%; }
+    .signature-line { border-top: 1px solid #000; margin-top: 50px; }
+    .bold { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>SMLOUVA O DÍLO</h1>
+  <p class="date">V Praze dne 8. 5. 2025</p>
+  
+  <div class="section">
+    <h2>I. Smluvní strany</h2>
+    <p><span class="bold">Objednatel:</span><br>
+    Moje Firma s.r.o.<br>
+    Sídlo: Václavské náměstí 1, 110 00 Praha 12<br>
+    IČO: 12345678<br>
+    DIČ: {{KUP_DIC}}<br>
+    Zastoupený: {{KUP_ZASTUPCE}}<br>
+    (dále jen "Objednatel")</p>
+    
+    <p><span class="bold">Zhotovitel:</span><br>
+    Dodavatel s.r.o.<br>
+    Sídlo: Dlouhá 5, 110 00 Praha 1<br>
+    IČO: 87654321<br>
+    DIČ: {{PROD_DIC}}<br>
+    Zastoupený: {{PROD_ZASTUPCE}}<br>
+    (dále jen "Zhotovitel")</p>
+  </div>
+  
+  <div class="section">
+    <h2>II. Předmět smlouvy</h2>
+    <p>Zhotovitel se zavazuje provést pro objednatele dílo: jhhjj</p>
+    <p>Specifikace díla: {{SPECIFIKACE_DILA}}</p>
+  </div>
+  
+  <div class="section">
+    <h2>III. Cena díla a platební podmínky</h2>
+    <p>Cena díla činí 250000 Kč bez DPH.</p>
+    <p>Splatnost faktury je {{SPLATNOST}} dní od doručení faktury objednateli.</p>
+  </div>
+  
+  <div class="section">
+    <h2>IV. Termín zhotovení díla</h2>
+    <p>Zhotovitel se zavazuje zhotovit dílo do {{TERMIN_DOKONCENI}}.</p>
+  </div>
+  
+  <div class="section">
+    <h2>V. Záruční doba</h2>
+    <p>Záruční doba na dílo činí {{ZARUCNI_DOBA}} měsíců od předání díla objednateli.</p>
+  </div>
+  
+  <div class="section">
+    <h2>VI. Závěrečná ustanovení</h2>
+    <p>Tato smlouva nabývá platnosti a účinnosti dnem podpisu oběma smluvními stranami.</p>
+    <p>Smlouva je vyhotovena ve dvou stejnopisech, z nichž každá smluvní strana obdrží po jednom vyhotovení.</p>
+    <p>Smluvní strany prohlašují, že si smlouvu přečetly, s jejím obsahem souhlasí a na důkaz toho připojují své podpisy.</p>
+  </div>
+  
+  <div class="signatures">
+    <div class="signature">
+      <p class="signature-line">Objednatel</p>
+    </div>
+    <div class="signature">
+      <p class="signature-line">Zhotovitel</p>
+    </div>
+  </div>
+</body>
+</html>

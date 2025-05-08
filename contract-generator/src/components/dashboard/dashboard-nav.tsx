@@ -5,34 +5,39 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   {
-    title: "Templates",
+    title: "Šablony",
     href: "/dashboard/templates",
     icon: "📄",
   },
   {
-    title: "Generated Files",
+    title: "Vygenerované soubory",
     href: "/dashboard/files",
     icon: "📁",
   },
   {
-    title: "Company Profiles",
+    title: "Firemní profily",
     href: "/dashboard/profiles",
     icon: "🏢",
   },
   {
-    title: "Form Templates",
+    title: "Šablony formulářů",
     href: "/dashboard/form-templates",
     icon: "📝",
   },
   {
-    title: "Users",
+    title: "Uživatelé",
     href: "/dashboard/users",
     icon: "👥",
   },
   {
-    title: "Audit Logs",
+    title: "Protokoly aktivit",
     href: "/dashboard/logs",
     icon: "📊",
+  },
+  {
+    title: "Nahrát dokumenty",
+    href: "/dashboard/upload",
+    icon: "📤",
   },
 ];
 
