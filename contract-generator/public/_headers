@@ -1,0 +1,14 @@
+# Cache static assets
+/images/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Cache JavaScript and CSS files
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Don't cache HTML and API responses
+/*
+  Cache-Control: public, max-age=0, must-revalidate
