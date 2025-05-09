@@ -42,22 +42,30 @@ export function TemplateTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {templates.map((template) => (
-            <TableRow key={template.id}>
-              <TableCell className="font-medium">{template.name}</TableCell>
-              <TableCell>{template.version}</TableCell>
-              <TableCell>{template.created}</TableCell>
-              <TableCell>{template.status}</TableCell>
-              <TableCell className="text-right">
-                <Button variant="ghost" size="sm">
-                  Edit
-                </Button>
-                <Button variant="ghost" size="sm">
-                  Delete
-                </Button>
+          {templates.length > 0 ? (
+            templates.map((template) => (
+              <TableRow key={template.id}>
+                <TableCell className="font-medium">{template.name}</TableCell>
+                <TableCell>{template.version}</TableCell>
+                <TableCell>{template.created}</TableCell>
+                <TableCell>{template.status}</TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="sm">
+                    Edit
+                  </Button>
+                  <Button variant="ghost" size="sm">
+                    Delete
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                Žádné šablony nejsou k dispozici.
               </TableCell>
             </TableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
     </div>

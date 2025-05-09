@@ -29,33 +29,39 @@ const templates = [
 export function TemplateCatalog() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-      {templates.map((template) => (
-        <Card key={template.id} className="flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xl">{template.name}</CardTitle>
-            <CardDescription className="text-sm">{template.description}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex-grow pt-2">
-            <div className="flex flex-wrap gap-2">
-              {template.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="bg-muted text-muted-foreground px-2 py-1 rounded-md text-xs font-medium"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </CardContent>
-          <CardFooter className="pt-4">
-            <Button asChild className="w-full">
-              <Link href={`/template/${template.id}`}>
-                Použít dokument
-              </Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      ))}
+      {templates.length > 0 ? (
+        templates.map((template) => (
+          <Card key={template.id} className="flex flex-col hover:shadow-lg transition-shadow duration-300 border-muted hover:border-muted-foreground/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl">{template.name}</CardTitle>
+              <CardDescription className="text-sm">{template.description}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow pt-2">
+              <div className="flex flex-wrap gap-2">
+                {template.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="bg-muted text-muted-foreground px-2 py-1 rounded-md text-xs font-medium"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </CardContent>
+            <CardFooter className="pt-4">
+              <Button asChild className="w-full">
+                <Link href={`/template/${template.id}`}>
+                  Použít dokument
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        ))
+      ) : (
+        <div className="col-span-full text-center py-8">
+          <p className="text-muted-foreground">Žádné šablony dokumentů nejsou k dispozici.</p>
+        </div>
+      )}
     </div>
   );
 }

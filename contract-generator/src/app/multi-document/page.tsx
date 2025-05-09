@@ -94,42 +94,48 @@ export default function MultiDocumentPage() {
 
         <div className="bg-card p-8 rounded-lg border shadow-sm mb-8">
           <h2 className="text-2xl font-semibold mb-6">Vyberte dokumenty</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {templates.map((template) => (
-              <Card
-                key={template.id}
-                className={`flex flex-col hover:shadow-md transition-shadow duration-300 ${
-                  selectedTemplates.includes(template.id) ? 'border-primary ring-1 ring-primary' : ''
-                }`}
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-xl">{template.name}</CardTitle>
-                      <CardDescription className="text-sm">{template.description}</CardDescription>
+          {templates.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {templates.map((template) => (
+                <Card
+                  key={template.id}
+                  className={`flex flex-col hover:shadow-md transition-shadow duration-300 ${
+                    selectedTemplates.includes(template.id) ? 'border-primary ring-1 ring-primary' : ''
+                  }`}
+                >
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-xl">{template.name}</CardTitle>
+                        <CardDescription className="text-sm">{template.description}</CardDescription>
+                      </div>
+                      <Checkbox
+                        checked={selectedTemplates.includes(template.id)}
+                        onCheckedChange={() => handleTemplateToggle(template.id)}
+                        className="h-5 w-5"
+                      />
                     </div>
-                    <Checkbox
-                      checked={selectedTemplates.includes(template.id)}
-                      onCheckedChange={() => handleTemplateToggle(template.id)}
-                      className="h-5 w-5"
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-grow pt-2">
-                  <div className="flex flex-wrap gap-2">
-                    {template.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="bg-muted text-muted-foreground px-2 py-1 rounded-md text-xs font-medium"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardHeader>
+                  <CardContent className="flex-grow pt-2">
+                    <div className="flex flex-wrap gap-2">
+                      {template.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="bg-muted text-muted-foreground px-2 py-1 rounded-md text-xs font-medium"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Žádné dokumenty nejsou k dispozici.</p>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-between items-center">

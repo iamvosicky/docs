@@ -13,7 +13,7 @@ export default function Home() {
           <div>
             <h1 className="text-4xl font-bold mb-2 text-center sm:text-left">Právní dokumenty</h1>
             <p className="text-muted-foreground text-center sm:text-left text-lg">
-              Vyberte dokument pro vygenerování vlastního právního dokumentu
+              Vygenerujte vlastní právní dokumenty snadno a rychle
             </p>
           </div>
           <div className="mt-4 sm:mt-0 flex justify-center sm:justify-end">
@@ -44,11 +44,31 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Quick Buttons Section */}
-        <HomeQuickButtons />
+        {/* Shortcuts Section */}
+        <section className="mb-12">
+          <div className="border-b pb-4 mb-6">
+            <h2 className="text-3xl font-bold">Rychlé volby</h2>
+            <p className="text-muted-foreground text-lg">
+              Vyberte použití a přejděte přímo na generování dokumentů
+            </p>
+          </div>
+          <div className="bg-card rounded-lg border shadow-sm p-6">
+            <HomeQuickButtons />
+          </div>
+        </section>
 
-        {/* Template Catalog Section */}
-        <TemplateCatalog />
+        {/* Documents Section */}
+        <section>
+          <div className="border-b pb-4 mb-6">
+            <h2 className="text-3xl font-bold">Jednotlivé dokumenty</h2>
+            <p className="text-muted-foreground text-lg">
+              Vyberte konkrétní dokument pro vygenerování
+            </p>
+          </div>
+          <div className="bg-card rounded-lg border shadow-sm p-6">
+            <TemplateCatalog />
+          </div>
+        </section>
       </div>
     </div>
   );
