@@ -3,6 +3,8 @@
 import { DynamicForm } from "@/components/forms/dynamic-form";
 import { useParams } from 'next/navigation';
 
+export const runtime = 'edge';
+
 // This would be fetched from the API in a real implementation
 const getTemplateData = (id: string) => {
   if (!id) return null;

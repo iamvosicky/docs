@@ -1,31 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
-// Create a directory for storing generated files
-const TEMP_DIR = path.join(process.cwd(), 'public', 'generated');
-if (!fs.existsSync(TEMP_DIR)) {
-  fs.mkdirSync(TEMP_DIR, { recursive: true });
-}
+export const runtime = 'edge';
 
-// Clean up old files (files older than 1 hour)
-const cleanupOldFiles = () => {
-  try {
-    const files = fs.readdirSync(TEMP_DIR);
-    const now = Date.now();
-    const oneHour = 60 * 60 * 1000;
-
-    files.forEach(file => {
-      const filePath = path.join(TEMP_DIR, file);
-      const stats = fs.statSync(filePath);
-      if (now - stats.mtimeMs > oneHour) {
-        fs.unlinkSync(filePath);
-      }
-    });
-  } catch (error) {
-    console.error('Error cleaning up old files:', error);
-  }
+// Mock template content for the Edge runtime
+const mockTemplates: Record<string, string> = {
+  'smlouva-o-dilo': '<h1>Smlouva o dílo</h1><p>Mezi {{KUP_JMENO}} a {{PROD_JMENO}}</p><p>Předmět díla: {{PREDMET_DILA}}</p><p>Cena: {{CENA}}</p><p>Datum předání: {{DATUM_PREDANI}}</p>',
+  'dohoda-o-provedeni-prace': '<h1>Dohoda o provedení práce</h1><p>Zaměstnavatel: {{ZAM_JMENO}}</p><p>Pracovník: {{PRAC_JMENO}}</p><p>Popis práce: {{POPIS_PRACE}}</p><p>Odměna: {{ODMENA}}</p>',
+  'kupni-smlouva': '<h1>Kupní smlouva</h1><p>Kupující: {{KUP_JMENO}}</p><p>Prodávající: {{PROD_JMENO}}</p><p>Předmět prodeje: {{PREDMET_PRODEJE}}</p><p>Cena: {{CENA}}</p>'
 };
 
 // Generate a document file
@@ -36,26 +18,11 @@ const generateDocument = async (
 ): Promise<string> => {
   // Create a unique filename
   const filename = `${templateId}-${uuidv4()}.${format}`;
-  const filePath = path.join(TEMP_DIR, filename);
 
-  // Map template IDs to template file names
-  const templateFiles: Record<string, string> = {
-    'smlouva-o-dilo': 'smlouva-o-dilo.html',
-    'dohoda-o-provedeni-prace': 'dohoda-o-provedeni-prace.html',
-    'kupni-smlouva': 'kupni-smlouva.html'
-  };
-
-  // Get template file path
-  const templateFile = templateFiles[templateId];
-  if (!templateFile) {
+  // Get template content
+  const templateContent = mockTemplates[templateId];
+  if (!templateContent) {
     throw new Error(`Template not found for ID: ${templateId}`);
-  }
-
-  const templatePath = path.join(process.cwd(), 'public', 'templates', templateFile);
-
-  // Check if template file exists
-  if (!fs.existsSync(templatePath)) {
-    throw new Error(`Template file not found: ${templatePath}`);
   }
 
   try {
@@ -63,9 +30,6 @@ const generateDocument = async (
     if (!formData['DATUM_PODPISU']) {
       formData['DATUM_PODPISU'] = new Date().toLocaleDateString('cs-CZ');
     }
-
-    // Read the template file
-    const templateContent = fs.readFileSync(templatePath, 'utf-8');
 
     // Process the template with the form data
     let processedContent = templateContent;
@@ -82,31 +46,22 @@ const generateDocument = async (
       }
     });
 
-    // Write the processed content to the output file
-    fs.writeFileSync(filePath, processedContent);
+    // In a real implementation with Edge runtime, we would:
+    // 1. Store the generated content in a database or cloud storage
+    // 2. Return a URL to access the generated document
 
-    // For PDF format, we would need to convert the HTML to PDF
-    // For simplicity, we'll just use the same HTML content with a .pdf extension
-    if (format === 'pdf') {
-      const pdfFilename = `${templateId}-${uuidv4()}.pdf`;
-      const pdfFilePath = path.join(TEMP_DIR, pdfFilename);
-      fs.writeFileSync(pdfFilePath, processedContent);
-      return `/generated/${pdfFilename}`;
-    }
+    // For this demo, we'll just return a mock URL
+    const mockUrl = `/api/documents/${filename}`;
+
+    return mockUrl;
   } catch (error) {
     console.error(`Error generating ${format} document:`, error);
     throw error;
   }
-
-  // Return the public URL to the file
-  return `/generated/${filename}`;
 };
 
 export async function POST(request: NextRequest) {
   try {
-    // Clean up old files
-    cleanupOldFiles();
-
     // Parse the request body
     const body = await request.json();
     const { templates, formData } = body;

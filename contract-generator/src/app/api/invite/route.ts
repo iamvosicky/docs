@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = 'edge';
+
 export async function POST(request: NextRequest) {
   try {
     // Parse the request body
@@ -54,7 +56,7 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   // This would typically fetch all invitations from the database
   // For now, we'll return mock data
-  
+
   const invitations = [
     {
       id: "1",

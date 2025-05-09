@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { MultiDocumentForm } from "@/components/forms/multi-document-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -316,7 +316,7 @@ interface Template {
   };
 }
 
-export default function MultiDocumentFormPage() {
+function FormContent() {
   const searchParams = useSearchParams();
   // Get template IDs from URL and ensure they're valid
   const rawTemplateIds = searchParams.get('templates') || '';
@@ -474,5 +474,35 @@ export default function MultiDocumentFormPage() {
         </Tabs>
       </div>
     </div>
+  );
+}
+
+export default function MultiDocumentFormPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-8">
+            <Skeleton className="h-10 w-40 mb-4" />
+            <Skeleton className="h-12 w-3/4 mb-3" />
+            <Skeleton className="h-6 w-1/2" />
+          </div>
+          <div className="bg-card p-8 rounded-lg border shadow-sm">
+            <Skeleton className="h-8 w-64 mb-6" />
+            <div className="space-y-4">
+              {Array(6).fill(0).map((_, i) => (
+                <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                </div>
+              ))}
+            </div>
+            <Skeleton className="h-10 w-32 mt-6" />
+          </div>
+        </div>
+      </div>
+    }>
+      <FormContent />
+    </Suspense>
   );
 }

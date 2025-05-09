@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 
+export const runtime = 'edge';
+
 export async function GET() {
   // This would typically fetch users from the database
   // For now, we'll return mock data
-  
+
   const users = [
     {
       id: "1",
