@@ -3,6 +3,8 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Lock } from "lucide-react";
+import { useAuth } from "./auth/auth-provider";
 
 // Mock data for templates - will be replaced with API data
 const templates = [
@@ -90,6 +92,8 @@ const templates = [
 ];
 
 export function TemplateCatalog() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
       {templates.length > 0 ? (
@@ -112,11 +116,20 @@ export function TemplateCatalog() {
               </div>
             </CardContent>
             <CardFooter className="pt-4">
-              <Button asChild className="w-full">
-                <Link href={`/template/${template.id}`}>
-                  Použít dokument
-                </Link>
-              </Button>
+              {isAuthenticated ? (
+                <Button asChild className="w-full">
+                  <Link href={`/generate?template=${template.id}`}>
+                    Použít dokument
+                  </Link>
+                </Button>
+              ) : (
+                <Button asChild className="w-full">
+                  <Link href={`/login?returnUrl=/generate?template=${template.id}`}>
+                    <Lock className="h-4 w-4 mr-2" />
+                    Přihlásit se pro použití
+                  </Link>
+                </Button>
+              )}
             </CardFooter>
           </Card>
         ))

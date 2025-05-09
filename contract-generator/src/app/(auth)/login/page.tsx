@@ -1,6 +1,27 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { SignIn } from "@/components/auth/sign-in";
+import { useAuth } from '../../../components/auth/auth-provider';
 
 export default function LoginPage() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnUrl = searchParams.get('returnUrl') || '/';
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (isClient && !isLoading && isAuthenticated) {
+      router.push(returnUrl);
+    }
+  }, [isClient, isLoading, isAuthenticated, router, returnUrl]);
+
   return (
     <div className="container mx-auto px-4 flex min-h-[calc(100vh-8rem)] flex-col items-center justify-center py-12">
       <div className="mx-auto flex w-full flex-col justify-center space-y-8 sm:w-[400px]">
@@ -13,7 +34,7 @@ export default function LoginPage() {
           </p>
         </div>
         <div className="bg-card p-6 rounded-lg border shadow-sm">
-          <SignIn />
+          <SignIn returnUrl={returnUrl} />
         </div>
         <p className="text-center text-sm text-muted-foreground">
           Don't have an account?{" "}

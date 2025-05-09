@@ -13,12 +13,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
+import { useAuth } from "./auth/auth-provider";
 
 export function Navbar() {
-  // In a real implementation, this would be determined by authentication state
-  const isLoggedIn = true;
-  const isAdmin = true;
+  const { isAuthenticated, isAdmin, user, logout } = useAuth();
   const { setTheme } = useTheme();
+
+  const handleLogout = () => {
+    logout();
+    toast.success("Logged out successfully");
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -31,7 +36,7 @@ export function Navbar() {
 
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-3">
-            {isLoggedIn ? (
+            {isAuthenticated ? (
               <>
                 {isAdmin && (
                   <>
@@ -53,8 +58,10 @@ export function Navbar() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                       <Avatar className="h-9 w-9">
-                        <AvatarImage src="" alt="User" />
-                        <AvatarFallback>U</AvatarFallback>
+                        <AvatarImage src="" alt={user?.name || "User"} />
+                        <AvatarFallback>
+                          {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                        </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
@@ -90,7 +97,9 @@ export function Navbar() {
                       Systémový
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="cursor-pointer">Odhlásit se</DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
+                      Odhlásit se
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>

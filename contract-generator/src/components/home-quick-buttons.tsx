@@ -2,11 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, FileText, Users, Briefcase, ShoppingCart } from "lucide-react";
+import { Building2, FileText, Users, Briefcase, ShoppingCart, Lock } from "lucide-react";
 import Link from "next/link";
 import { useCases } from "./use-case-shortcuts";
+import { useAuth } from "./auth/auth-provider";
 
 export function HomeQuickButtons() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <div>
       {useCases.length > 0 ? (
@@ -33,15 +36,28 @@ export function HomeQuickButtons() {
                     }
                   </span>
                 </div>
-                <Button
-                  asChild
-                  className="w-full mt-4"
-                  variant="default"
-                >
-                  <Link href={`/multi-document/form?templates=${useCase.templateIds.join(',')}`}>
-                    Vytvořit dokumenty
-                  </Link>
-                </Button>
+                {isAuthenticated ? (
+                  <Button
+                    asChild
+                    className="w-full mt-4"
+                    variant="default"
+                  >
+                    <Link href={`/generate?templates=${useCase.templateIds.join(',')}`}>
+                      Vytvořit dokumenty
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button
+                    asChild
+                    className="w-full mt-4"
+                    variant="default"
+                  >
+                    <Link href={`/login?returnUrl=/generate?templates=${useCase.templateIds.join(',')}`}>
+                      <Lock className="h-4 w-4 mr-2" />
+                      Přihlásit se pro vytvoření
+                    </Link>
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ))}
