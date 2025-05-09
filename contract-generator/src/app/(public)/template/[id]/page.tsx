@@ -9,6 +9,7 @@ const getTemplateData = (id: string) => {
 
   try {
     const templates = {
+      // Basic contracts
       "smlouva-o-dilo": {
         id: "smlouva-o-dilo",
         name: "Smlouva o dílo",
@@ -68,6 +69,205 @@ const getTemplateData = (id: string) => {
             DATUM_PREDANI: { type: "string", title: "Datum předání" }
           },
           required: ["KUP_JMENO", "KUP_ADRESA", "KUP_ICO", "PROD_JMENO", "PROD_ADRESA", "PROD_ICO", "PREDMET_PRODEJE", "CENA", "DATUM_PREDANI"]
+        }
+      },
+
+      // Company formation documents
+      "poa-zalozeni-statutar": {
+        id: "poa-zalozeni-statutar",
+        name: "Plná moc - založení statutár",
+        description: "Plná moc pro založení společnosti a statutárního orgánu",
+        schema: {
+          type: "object",
+          properties: {
+            COMPANY_NAME: { type: "string", title: "Název společnosti" },
+            COMPANY_ID: { type: "string", title: "IČO společnosti" },
+            COMPANY_ADDRESS: { type: "string", title: "Adresa společnosti" },
+            REPRESENTATIVE_NAME: { type: "string", title: "Jméno zástupce" },
+            REPRESENTATIVE_BIRTH_DATE: { type: "string", title: "Datum narození zástupce" },
+            REPRESENTATIVE_ADDRESS: { type: "string", title: "Adresa zástupce" },
+            ATTORNEY_NAME: { type: "string", title: "Jméno zmocněnce" },
+            ATTORNEY_BIRTH_DATE: { type: "string", title: "Datum narození zmocněnce" },
+            ATTORNEY_ADDRESS: { type: "string", title: "Adresa zmocněnce" },
+            PLACE: { type: "string", title: "Místo podpisu" },
+            DATE: { type: "string", title: "Datum podpisu" }
+          },
+          required: ["COMPANY_NAME", "COMPANY_ID", "COMPANY_ADDRESS", "REPRESENTATIVE_NAME", "REPRESENTATIVE_BIRTH_DATE", "REPRESENTATIVE_ADDRESS", "ATTORNEY_NAME", "ATTORNEY_BIRTH_DATE", "ATTORNEY_ADDRESS", "PLACE", "DATE"]
+        }
+      },
+      "affidavit-sr": {
+        id: "affidavit-sr",
+        name: "Affidavit SR",
+        description: "Čestné prohlášení pro Slovenský obchodní rejstřík",
+        schema: {
+          type: "object",
+          properties: {
+            PERSON_NAME: { type: "string", title: "Jméno osoby" },
+            PERSON_BIRTH_DATE: { type: "string", title: "Datum narození" },
+            PERSON_ADDRESS: { type: "string", title: "Adresa" },
+            COMPANY_NAME: { type: "string", title: "Název společnosti" },
+            COMPANY_ID: { type: "string", title: "IČO společnosti" },
+            PLACE: { type: "string", title: "Místo podpisu" },
+            DATE: { type: "string", title: "Datum podpisu" }
+          },
+          required: ["PERSON_NAME", "PERSON_BIRTH_DATE", "PERSON_ADDRESS", "COMPANY_NAME", "COMPANY_ID", "PLACE", "DATE"]
+        }
+      },
+      "stanovy": {
+        id: "stanovy",
+        name: "Stanovy společnosti",
+        description: "Stanovy akciové společnosti",
+        schema: {
+          type: "object",
+          properties: {
+            COMPANY_NAME: { type: "string", title: "Název společnosti" },
+            COMPANY_ADDRESS: { type: "string", title: "Adresa společnosti" },
+            BUSINESS_ACTIVITIES: { type: "string", title: "Předmět podnikání" },
+            SHARE_CAPITAL: { type: "string", title: "Základní kapitál" },
+            SHARES_COUNT: { type: "string", title: "Počet akcií" },
+            SHARE_VALUE: { type: "string", title: "Hodnota akcie" },
+            BOARD_MEMBERS_COUNT: { type: "string", title: "Počet členů představenstva" },
+            SUPERVISORY_BOARD_MEMBERS_COUNT: { type: "string", title: "Počet členů dozorčí rady" }
+          },
+          required: ["COMPANY_NAME", "COMPANY_ADDRESS", "BUSINESS_ACTIVITIES", "SHARE_CAPITAL", "SHARES_COUNT", "SHARE_VALUE", "BOARD_MEMBERS_COUNT", "SUPERVISORY_BOARD_MEMBERS_COUNT"]
+        }
+      },
+      "affidavit-statutar": {
+        id: "affidavit-statutar",
+        name: "Affidavit statutár",
+        description: "Čestné prohlášení statutárního orgánu",
+        schema: {
+          type: "object",
+          properties: {
+            PERSON_NAME: { type: "string", title: "Jméno osoby" },
+            PERSON_BIRTH_DATE: { type: "string", title: "Datum narození" },
+            PERSON_ADDRESS: { type: "string", title: "Adresa" },
+            COMPANY_NAME: { type: "string", title: "Název společnosti" },
+            COMPANY_ID: { type: "string", title: "IČO společnosti" },
+            PLACE: { type: "string", title: "Místo podpisu" },
+            DATE: { type: "string", title: "Datum podpisu" }
+          },
+          required: ["PERSON_NAME", "PERSON_BIRTH_DATE", "PERSON_ADDRESS", "COMPANY_NAME", "COMPANY_ID", "PLACE", "DATE"]
+        }
+      },
+      "poa-rt": {
+        id: "poa-rt",
+        name: "Plná moc RT",
+        description: "Plná moc pro rejstříkový soud",
+        schema: {
+          type: "object",
+          properties: {
+            COMPANY_NAME: { type: "string", title: "Název společnosti" },
+            COMPANY_ID: { type: "string", title: "IČO společnosti" },
+            COMPANY_ADDRESS: { type: "string", title: "Adresa společnosti" },
+            REPRESENTATIVE_NAME: { type: "string", title: "Jméno zástupce" },
+            REPRESENTATIVE_POSITION: { type: "string", title: "Pozice zástupce" },
+            ATTORNEY_NAME: { type: "string", title: "Jméno zmocněnce" },
+            ATTORNEY_BIRTH_DATE: { type: "string", title: "Datum narození zmocněnce" },
+            ATTORNEY_ADDRESS: { type: "string", title: "Adresa zmocněnce" },
+            PLACE: { type: "string", title: "Místo podpisu" },
+            DATE: { type: "string", title: "Datum podpisu" }
+          },
+          required: ["COMPANY_NAME", "COMPANY_ID", "COMPANY_ADDRESS", "REPRESENTATIVE_NAME", "REPRESENTATIVE_POSITION", "ATTORNEY_NAME", "ATTORNEY_BIRTH_DATE", "ATTORNEY_ADDRESS", "PLACE", "DATE"]
+        }
+      },
+      "poa-shareholder": {
+        id: "poa-shareholder",
+        name: "Plná moc akcionář",
+        description: "Plná moc pro akcionáře",
+        schema: {
+          type: "object",
+          properties: {
+            SHAREHOLDER_NAME: { type: "string", title: "Jméno akcionáře" },
+            SHAREHOLDER_BIRTH_DATE: { type: "string", title: "Datum narození akcionáře" },
+            SHAREHOLDER_ADDRESS: { type: "string", title: "Adresa akcionáře" },
+            COMPANY_NAME: { type: "string", title: "Název společnosti" },
+            COMPANY_ID: { type: "string", title: "IČO společnosti" },
+            ATTORNEY_NAME: { type: "string", title: "Jméno zmocněnce" },
+            ATTORNEY_BIRTH_DATE: { type: "string", title: "Datum narození zmocněnce" },
+            ATTORNEY_ADDRESS: { type: "string", title: "Adresa zmocněnce" },
+            PLACE: { type: "string", title: "Místo podpisu" },
+            DATE: { type: "string", title: "Datum podpisu" }
+          },
+          required: ["SHAREHOLDER_NAME", "SHAREHOLDER_BIRTH_DATE", "SHAREHOLDER_ADDRESS", "COMPANY_NAME", "COMPANY_ID", "ATTORNEY_NAME", "ATTORNEY_BIRTH_DATE", "ATTORNEY_ADDRESS", "PLACE", "DATE"]
+        }
+      },
+      "poa-statutar": {
+        id: "poa-statutar",
+        name: "Plná moc statutár",
+        description: "Plná moc pro statutární orgán",
+        schema: {
+          type: "object",
+          properties: {
+            COMPANY_NAME: { type: "string", title: "Název společnosti" },
+            COMPANY_ID: { type: "string", title: "IČO společnosti" },
+            COMPANY_ADDRESS: { type: "string", title: "Adresa společnosti" },
+            REPRESENTATIVE_NAME: { type: "string", title: "Jméno zástupce" },
+            REPRESENTATIVE_POSITION: { type: "string", title: "Pozice zástupce" },
+            ATTORNEY_NAME: { type: "string", title: "Jméno zmocněnce" },
+            ATTORNEY_BIRTH_DATE: { type: "string", title: "Datum narození zmocněnce" },
+            ATTORNEY_ADDRESS: { type: "string", title: "Adresa zmocněnce" },
+            PLACE: { type: "string", title: "Místo podpisu" },
+            DATE: { type: "string", title: "Datum podpisu" }
+          },
+          required: ["COMPANY_NAME", "COMPANY_ID", "COMPANY_ADDRESS", "REPRESENTATIVE_NAME", "REPRESENTATIVE_POSITION", "ATTORNEY_NAME", "ATTORNEY_BIRTH_DATE", "ATTORNEY_ADDRESS", "PLACE", "DATE"]
+        }
+      },
+      "rozhodnuti-umisteni-sidla": {
+        id: "rozhodnuti-umisteni-sidla",
+        name: "Rozhodnutí o umístění sídla",
+        description: "Rozhodnutí o umístění sídla společnosti",
+        schema: {
+          type: "object",
+          properties: {
+            COMPANY_NAME: { type: "string", title: "Název společnosti" },
+            COMPANY_ID: { type: "string", title: "IČO společnosti" },
+            COMPANY_ADDRESS: { type: "string", title: "Adresa společnosti" },
+            REPRESENTATIVE_NAME: { type: "string", title: "Jméno zástupce" },
+            REPRESENTATIVE_POSITION: { type: "string", title: "Pozice zástupce" },
+            PLACE: { type: "string", title: "Místo podpisu" },
+            DATE: { type: "string", title: "Datum podpisu" }
+          },
+          required: ["COMPANY_NAME", "COMPANY_ID", "COMPANY_ADDRESS", "REPRESENTATIVE_NAME", "REPRESENTATIVE_POSITION", "PLACE", "DATE"]
+        }
+      },
+      "souhlas-umisteni-sidla": {
+        id: "souhlas-umisteni-sidla",
+        name: "Souhlas s umístěním sídla",
+        description: "Souhlas s umístěním sídla společnosti",
+        schema: {
+          type: "object",
+          properties: {
+            OWNER_NAME: { type: "string", title: "Jméno vlastníka" },
+            OWNER_BIRTH_DATE: { type: "string", title: "Datum narození vlastníka" },
+            OWNER_ADDRESS: { type: "string", title: "Adresa vlastníka" },
+            PROPERTY_ADDRESS: { type: "string", title: "Adresa nemovitosti" },
+            COMPANY_NAME: { type: "string", title: "Název společnosti" },
+            COMPANY_ID: { type: "string", title: "IČO společnosti" },
+            PLACE: { type: "string", title: "Místo podpisu" },
+            DATE: { type: "string", title: "Datum podpisu" }
+          },
+          required: ["OWNER_NAME", "OWNER_BIRTH_DATE", "OWNER_ADDRESS", "PROPERTY_ADDRESS", "COMPANY_NAME", "COMPANY_ID", "PLACE", "DATE"]
+        }
+      },
+      "prohlaseni-spravce-vkladu": {
+        id: "prohlaseni-spravce-vkladu",
+        name: "Prohlášení správce vkladu",
+        description: "Prohlášení správce vkladu při založení společnosti",
+        schema: {
+          type: "object",
+          properties: {
+            ADMINISTRATOR_NAME: { type: "string", title: "Jméno správce vkladu" },
+            ADMINISTRATOR_BIRTH_DATE: { type: "string", title: "Datum narození správce vkladu" },
+            ADMINISTRATOR_ADDRESS: { type: "string", title: "Adresa správce vkladu" },
+            COMPANY_NAME: { type: "string", title: "Název společnosti" },
+            SHARE_CAPITAL: { type: "string", title: "Základní kapitál" },
+            BANK_NAME: { type: "string", title: "Název banky" },
+            BANK_ACCOUNT: { type: "string", title: "Číslo účtu" },
+            PLACE: { type: "string", title: "Místo podpisu" },
+            DATE: { type: "string", title: "Datum podpisu" }
+          },
+          required: ["ADMINISTRATOR_NAME", "ADMINISTRATOR_BIRTH_DATE", "ADMINISTRATOR_ADDRESS", "COMPANY_NAME", "SHARE_CAPITAL", "BANK_NAME", "BANK_ACCOUNT", "PLACE", "DATE"]
         }
       }
     };

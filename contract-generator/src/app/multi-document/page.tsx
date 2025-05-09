@@ -10,6 +10,7 @@ import { UseCaseShortcuts } from "@/components/use-case-shortcuts";
 
 // Mock data for templates - will be replaced with API data
 const templates = [
+  // Basic contracts
   {
     id: "smlouva-o-dilo",
     name: "Smlouva o dílo",
@@ -27,6 +28,68 @@ const templates = [
     name: "Kupní smlouva",
     description: "Standardní kupní smlouva na movitou věc",
     tags: ["purchase", "contract"]
+  },
+
+  // Company formation documents
+  {
+    id: "poa-zalozeni-statutar",
+    name: "Plná moc - založení statutár",
+    description: "Plná moc pro založení společnosti a statutárního orgánu",
+    tags: ["company", "formation", "power of attorney"]
+  },
+  {
+    id: "affidavit-sr",
+    name: "Affidavit SR",
+    description: "Čestné prohlášení pro Slovenský obchodní rejstřík",
+    tags: ["company", "formation", "affidavit"]
+  },
+  {
+    id: "stanovy",
+    name: "Stanovy společnosti",
+    description: "Stanovy akciové společnosti",
+    tags: ["company", "formation", "articles"]
+  },
+  {
+    id: "affidavit-statutar",
+    name: "Affidavit statutár",
+    description: "Čestné prohlášení statutárního orgánu",
+    tags: ["company", "formation", "affidavit"]
+  },
+  {
+    id: "poa-rt",
+    name: "Plná moc RT",
+    description: "Plná moc pro rejstříkový soud",
+    tags: ["company", "formation", "power of attorney"]
+  },
+  {
+    id: "poa-shareholder",
+    name: "Plná moc akcionář",
+    description: "Plná moc pro akcionáře",
+    tags: ["company", "formation", "power of attorney"]
+  },
+  {
+    id: "poa-statutar",
+    name: "Plná moc statutár",
+    description: "Plná moc pro statutární orgán",
+    tags: ["company", "formation", "power of attorney"]
+  },
+  {
+    id: "rozhodnuti-umisteni-sidla",
+    name: "Rozhodnutí o umístění sídla",
+    description: "Rozhodnutí o umístění sídla společnosti",
+    tags: ["company", "formation", "registered office"]
+  },
+  {
+    id: "souhlas-umisteni-sidla",
+    name: "Souhlas s umístěním sídla",
+    description: "Souhlas s umístěním sídla společnosti",
+    tags: ["company", "formation", "registered office"]
+  },
+  {
+    id: "prohlaseni-spravce-vkladu",
+    name: "Prohlášení správce vkladu",
+    description: "Prohlášení správce vkladu při založení společnosti",
+    tags: ["company", "formation", "capital"]
   }
 ];
 
@@ -95,41 +158,88 @@ export default function MultiDocumentPage() {
         <div className="bg-card p-8 rounded-lg border shadow-sm mb-8">
           <h2 className="text-2xl font-semibold mb-6">Vyberte dokumenty</h2>
           {templates.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {templates.map((template) => (
-                <Card
-                  key={template.id}
-                  className={`flex flex-col hover:shadow-md transition-shadow duration-300 ${
-                    selectedTemplates.includes(template.id) ? 'border-primary ring-1 ring-primary' : ''
-                  }`}
-                >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-xl">{template.name}</CardTitle>
-                        <CardDescription className="text-sm">{template.description}</CardDescription>
-                      </div>
-                      <Checkbox
-                        checked={selectedTemplates.includes(template.id)}
-                        onCheckedChange={() => handleTemplateToggle(template.id)}
-                        className="h-5 w-5"
-                      />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex-grow pt-2">
-                    <div className="flex flex-wrap gap-2">
-                      {template.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="bg-muted text-muted-foreground px-2 py-1 rounded-md text-xs font-medium"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="space-y-8">
+              {/* Basic contracts section */}
+              <div>
+                <h3 className="text-xl font-semibold mb-4 border-b pb-2">Základní smlouvy</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {templates.slice(0, 3).map((template) => (
+                    <Card
+                      key={template.id}
+                      className={`flex flex-col hover:shadow-md transition-shadow duration-300 ${
+                        selectedTemplates.includes(template.id) ? 'border-primary ring-1 ring-primary' : ''
+                      }`}
+                    >
+                      <CardHeader className="pb-2">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="text-xl">{template.name}</CardTitle>
+                            <CardDescription className="text-sm">{template.description}</CardDescription>
+                          </div>
+                          <Checkbox
+                            checked={selectedTemplates.includes(template.id)}
+                            onCheckedChange={() => handleTemplateToggle(template.id)}
+                            className="h-5 w-5"
+                          />
+                        </div>
+                      </CardHeader>
+                      <CardContent className="flex-grow pt-2">
+                        <div className="flex flex-wrap gap-2">
+                          {template.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="bg-muted text-muted-foreground px-2 py-1 rounded-md text-xs font-medium"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              {/* Company formation documents section */}
+              <div>
+                <h3 className="text-xl font-semibold mb-4 border-b pb-2">Dokumenty pro založení společnosti</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {templates.slice(3).map((template) => (
+                    <Card
+                      key={template.id}
+                      className={`flex flex-col hover:shadow-md transition-shadow duration-300 ${
+                        selectedTemplates.includes(template.id) ? 'border-primary ring-1 ring-primary' : ''
+                      }`}
+                    >
+                      <CardHeader className="pb-2">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="text-xl">{template.name}</CardTitle>
+                            <CardDescription className="text-sm">{template.description}</CardDescription>
+                          </div>
+                          <Checkbox
+                            checked={selectedTemplates.includes(template.id)}
+                            onCheckedChange={() => handleTemplateToggle(template.id)}
+                            className="h-5 w-5"
+                          />
+                        </div>
+                      </CardHeader>
+                      <CardContent className="flex-grow pt-2">
+                        <div className="flex flex-wrap gap-2">
+                          {template.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="bg-muted text-muted-foreground px-2 py-1 rounded-md text-xs font-medium"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : (
             <div className="text-center py-8">

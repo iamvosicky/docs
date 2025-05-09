@@ -6,6 +6,7 @@ import Link from "next/link";
 
 // Mock data for templates - will be replaced with API data
 const templates = [
+  // Basic contracts
   {
     id: "smlouva-o-dilo",
     name: "Smlouva o dílo",
@@ -23,6 +24,68 @@ const templates = [
     name: "Kupní smlouva",
     description: "Standardní kupní smlouva na movitou věc",
     tags: ["purchase", "contract"]
+  },
+
+  // Company formation documents
+  {
+    id: "poa-zalozeni-statutar",
+    name: "Plná moc - založení statutár",
+    description: "Plná moc pro založení společnosti a statutárního orgánu",
+    tags: ["company", "formation", "power of attorney"]
+  },
+  {
+    id: "affidavit-sr",
+    name: "Affidavit SR",
+    description: "Čestné prohlášení pro Slovenský obchodní rejstřík",
+    tags: ["company", "formation", "affidavit"]
+  },
+  {
+    id: "stanovy",
+    name: "Stanovy společnosti",
+    description: "Stanovy akciové společnosti",
+    tags: ["company", "formation", "articles"]
+  },
+  {
+    id: "affidavit-statutar",
+    name: "Affidavit statutár",
+    description: "Čestné prohlášení statutárního orgánu",
+    tags: ["company", "formation", "affidavit"]
+  },
+  {
+    id: "poa-rt",
+    name: "Plná moc RT",
+    description: "Plná moc pro rejstříkový soud",
+    tags: ["company", "formation", "power of attorney"]
+  },
+  {
+    id: "poa-shareholder",
+    name: "Plná moc akcionář",
+    description: "Plná moc pro akcionáře",
+    tags: ["company", "formation", "power of attorney"]
+  },
+  {
+    id: "poa-statutar",
+    name: "Plná moc statutár",
+    description: "Plná moc pro statutární orgán",
+    tags: ["company", "formation", "power of attorney"]
+  },
+  {
+    id: "rozhodnuti-umisteni-sidla",
+    name: "Rozhodnutí o umístění sídla",
+    description: "Rozhodnutí o umístění sídla společnosti",
+    tags: ["company", "formation", "registered office"]
+  },
+  {
+    id: "souhlas-umisteni-sidla",
+    name: "Souhlas s umístěním sídla",
+    description: "Souhlas s umístěním sídla společnosti",
+    tags: ["company", "formation", "registered office"]
+  },
+  {
+    id: "prohlaseni-spravce-vkladu",
+    name: "Prohlášení správce vkladu",
+    description: "Prohlášení správce vkladu při založení společnosti",
+    tags: ["company", "formation", "capital"]
   }
 ];
 

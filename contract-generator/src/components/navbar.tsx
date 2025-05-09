@@ -3,12 +3,22 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { useTheme } from "next-themes";
 
 export function Navbar() {
   // In a real implementation, this would be determined by authentication state
   const isLoggedIn = true;
   const isAdmin = true;
+  const { setTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -24,10 +34,20 @@ export function Navbar() {
             {isLoggedIn ? (
               <>
                 {isAdmin && (
-                  <Button variant="ghost" asChild className="font-medium">
-                    <Link href="/dashboard">Dashboard</Link>
-                  </Button>
+                  <>
+                    <Button variant="ghost" asChild className="font-medium">
+                      <Link href="/dashboard">Dashboard</Link>
+                    </Button>
+                    <Button variant="ghost" asChild className="font-medium">
+                      <Link href="/users">Uživatelé</Link>
+                    </Button>
+                    <Button variant="ghost" asChild className="font-medium">
+                      <Link href="/invite">Pozvat</Link>
+                    </Button>
+                  </>
                 )}
+
+                <ThemeToggle />
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -39,12 +59,38 @@ export function Navbar() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuLabel>Můj účet</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="cursor-pointer">Profile</DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer">Settings</DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer">Profil</DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer">Nastavení</DropdownMenuItem>
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel>Administrace</DropdownMenuLabel>
+                        <DropdownMenuItem asChild>
+                          <Link href="/dashboard">Dashboard</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/users">Správa uživatelů</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/invite">Pozvat uživatele</Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="cursor-pointer">Log out</DropdownMenuItem>
+                    <DropdownMenuLabel>Motiv</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => setTheme("light")}>
+                      Světlý
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("dark")}>
+                      Tmavý
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme("system")}>
+                      Systémový
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="cursor-pointer">Odhlásit se</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
