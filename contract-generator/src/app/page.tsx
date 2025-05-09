@@ -5,7 +5,7 @@ import { HomeQuickButtons } from "@/components/home-quick-buttons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { useAuth } from "../components/auth/auth-provider";
+import { useAuth } from "@/components/auth/auth-provider";
 
 export default function Home() {
   const { isAuthenticated, user } = useAuth();

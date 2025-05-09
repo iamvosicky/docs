@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SignIn } from "@/components/auth/sign-in";
-import { useAuth } from '../../../components/auth/auth-provider';
+import { useAuth } from '@/components/auth/auth-provider';
+import { LoadingPage } from '@/components/ui/loading';
 
-export default function LoginPage() {
+// Client component that uses useSearchParams
+function LoginContent() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -44,5 +46,14 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoadingPage />}>
+      <LoginContent />
+    </Suspense>
   );
 }

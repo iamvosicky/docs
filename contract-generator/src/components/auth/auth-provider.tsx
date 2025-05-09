@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCookie, setCookie, deleteCookie, triggerAuthChangeEvent } from '../../lib/auth-utils';
+import { getCookie, setCookie, deleteCookie, triggerAuthChangeEvent } from '@/lib/auth-utils';
 
 interface AuthUser {
   email: string;

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Lock } from "lucide-react";
-import { useAuth } from "./auth/auth-provider";
+import { useAuth } from "@/components/auth/auth-provider";
 
 // Mock data for templates - will be replaced with API data
 const templates = [

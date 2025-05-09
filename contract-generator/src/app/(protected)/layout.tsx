@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../components/auth/auth-provider';
-import { LoadingPage } from '../../components/ui/loading';
+import { useAuth } from '@/components/auth/auth-provider';
+import { LoadingPage } from '@/components/ui/loading';
 
 export default function ProtectedLayout({
   children,

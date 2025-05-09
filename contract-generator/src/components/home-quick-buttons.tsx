@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Building2, FileText, Users, Briefcase, ShoppingCart, Lock } from "lucide-react";
 import Link from "next/link";
 import { useCases } from "./use-case-shortcuts";
-import { useAuth } from "./auth/auth-provider";
+import { useAuth } from "@/components/auth/auth-provider";
 
 export function HomeQuickButtons() {
   const { isAuthenticated } = useAuth();

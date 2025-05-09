@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useAuth } from '../../../components/auth/auth-provider';
+import { useAuth } from '@/components/auth/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { LoadingPage } from '../../../components/ui/loading';
+import { LoadingPage } from '@/components/ui/loading';
 
 interface Document {
   id: string;
@@ -26,7 +26,7 @@ export default function DocumentsPage() {
       try {
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         // Mock data
         const mockDocuments: Document[] = [
           {
@@ -51,7 +51,7 @@ export default function DocumentsPage() {
             status: 'processing'
           }
         ];
-        
+
         setDocuments(mockDocuments);
       } catch (error) {
         console.error('Error fetching documents:', error);
@@ -59,7 +59,7 @@ export default function DocumentsPage() {
         setIsLoading(false);
       }
     };
-    
+
     fetchDocuments();
   }, []);
 
@@ -75,7 +75,7 @@ export default function DocumentsPage() {
           <Link href="/generate">Generate New Document</Link>
         </Button>
       </div>
-      
+
       {documents.length === 0 ? (
         <Card>
           <CardContent className="py-10">

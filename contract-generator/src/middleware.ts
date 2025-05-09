@@ -10,7 +10,10 @@ const protectedPaths = [
   '/generate',
   '/documents',
   '/templates',
-  '/contracts'
+  '/contracts',
+
+  // Template pages (for viewing and filling out templates)
+  '/template'
 ];
 
 // Define paths that are public (no auth required)
@@ -65,6 +68,9 @@ export const config = {
     '/documents/:path*',
     '/templates/:path*',
     '/contracts/:path*',
+
+    // Template pages
+    '/template/:path*',
 
     // Public paths that need special handling
     '/login',

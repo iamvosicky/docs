@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuth } from '../../../components/auth/auth-provider';
+import { useAuth } from '@/components/auth/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -24,25 +24,25 @@ export default function GenerateDocumentPage() {
 
   const handleGenerateDocument = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!templateId) {
       toast.error('Please select a template');
       return;
     }
-    
+
     if (!documentName) {
       toast.error('Please enter a document name');
       return;
     }
-    
+
     setIsGenerating(true);
-    
+
     try {
       // In a real implementation, this would call an API to generate the document
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       toast.success('Document generated successfully!');
-      
+
       // In a real implementation, this would redirect to the generated document
       // router.push(`/documents/${generatedDocumentId}`);
     } catch (error) {
@@ -56,7 +56,7 @@ export default function GenerateDocumentPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Generate Document</h1>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Document Generation</CardTitle>
@@ -64,13 +64,13 @@ export default function GenerateDocumentPage() {
             Select a template and provide information to generate your document.
           </CardDescription>
         </CardHeader>
-        
+
         <form onSubmit={handleGenerateDocument}>
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="template">Template</Label>
-              <Select 
-                value={templateId} 
+              <Select
+                value={templateId}
                 onValueChange={setTemplateId}
                 disabled={isGenerating}
               >
@@ -86,7 +86,7 @@ export default function GenerateDocumentPage() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="documentName">Document Name</Label>
               <Input
@@ -97,7 +97,7 @@ export default function GenerateDocumentPage() {
                 disabled={isGenerating}
               />
             </div>
-            
+
             <div className="pt-4">
               <p className="text-sm text-muted-foreground">
                 You are logged in as <span className="font-medium">{user?.email || 'Unknown User'}</span>.
@@ -105,10 +105,10 @@ export default function GenerateDocumentPage() {
               </p>
             </div>
           </CardContent>
-          
+
           <CardFooter>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isGenerating}
               className="w-full"
             >

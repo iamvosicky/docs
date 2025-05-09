@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { useAuth } from "./auth-provider";
-import { LoadingSpinner } from "../ui/loading";
+import { useAuth } from "@/components/auth/auth-provider";
+import { LoadingSpinner } from "@/components/ui/loading";
 
 interface SignInProps {
   returnUrl?: string;
