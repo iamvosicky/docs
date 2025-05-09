@@ -16,6 +16,24 @@ export interface UseCase {
 // Define use cases with their associated document templates
 export const useCases: UseCase[] = [
   {
+    id: "company-formation",
+    name: "Založení a.s.",
+    description: "Kompletní sada dokumentů pro založení akciové společnosti",
+    icon: <Building2 className="h-5 w-5" />,
+    templateIds: [
+      "poa-zalozeni-statutar",
+      "affidavit-sr",
+      "stanovy",
+      "affidavit-statutar",
+      "poa-rt",
+      "poa-shareholder",
+      "poa-statutar",
+      "rozhodnuti-umisteni-sidla",
+      "souhlas-umisteni-sidla",
+      "prohlaseni-spravce-vkladu"
+    ]
+  },
+  {
     id: "create-company",
     name: "Založení společnosti",
     description: "Dokumenty potřebné pro založení nové společnosti",
@@ -42,24 +60,6 @@ export const useCases: UseCase[] = [
     description: "Dokumenty pro nákup a prodej zboží",
     icon: <ShoppingCart className="h-5 w-5" />,
     templateIds: ["kupni-smlouva"]
-  },
-  {
-    id: "company-formation",
-    name: "Založení a.s.",
-    description: "Kompletní sada dokumentů pro založení akciové společnosti",
-    icon: <Building2 className="h-5 w-5" />,
-    templateIds: [
-      "poa-zalozeni-statutar",
-      "affidavit-sr",
-      "stanovy",
-      "affidavit-statutar",
-      "poa-rt",
-      "poa-shareholder",
-      "poa-statutar",
-      "rozhodnuti-umisteni-sidla",
-      "souhlas-umisteni-sidla",
-      "prohlaseni-spravce-vkladu"
-    ]
   }
 ];
 

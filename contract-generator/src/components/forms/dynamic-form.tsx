@@ -98,7 +98,24 @@ export function DynamicForm({ templateId, schema }: DynamicFormProps) {
                     <FormItem>
                       <FormLabel>{value.title}</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input
+                          {...field}
+                          type={
+                            key.toLowerCase().includes('date') ||
+                            key.toLowerCase().includes('birth') ||
+                            key.toLowerCase().includes('narozeni') ? 'date' :
+                            key.toLowerCase().includes('email') ? 'email' :
+                            key.toLowerCase().includes('phone') ||
+                            key.toLowerCase().includes('telefon') ? 'tel' :
+                            key.toLowerCase().includes('number') ||
+                            key.toLowerCase().includes('cislo') ? 'number' :
+                            key.toLowerCase().includes('password') ||
+                            key.toLowerCase().includes('heslo') ? 'password' :
+                            key.toLowerCase().includes('url') ||
+                            key.toLowerCase().includes('web') ? 'url' :
+                            'text'
+                          }
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

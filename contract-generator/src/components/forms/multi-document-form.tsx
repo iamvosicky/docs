@@ -74,7 +74,7 @@ const jsonSchemaToZod = (schema: Record<string, JsonSchemaProperty>) => {
 
   Object.entries(schema).forEach(([key, value]) => {
     if (value.type === "string") {
-      zodSchema[key] = z.string().min(1, { message: `${value.title} is required` });
+      zodSchema[key] = z.string().min(1, { message: `${value.title} je povinné` });
     } else {
       // Default to string for unknown types
       zodSchema[key] = z.string().optional();
@@ -263,14 +263,14 @@ export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
       });
 
       if (!response.ok) {
-        let errorMessage = 'Failed to generate documents';
+        let errorMessage = 'Nepodařilo se vygenerovat dokumenty';
         try {
           const errorData = await response.json();
           if (errorData && errorData.error) {
             errorMessage = errorData.error;
           }
         } catch (e) {
-          console.error('Error parsing error response:', e);
+          console.error('Chyba při zpracování chybové odpovědi:', e);
         }
         throw new Error(errorMessage);
       }
@@ -279,20 +279,20 @@ export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
       try {
         result = await response.json();
       } catch (e) {
-        console.error('Error parsing response:', e);
-        throw new Error('Invalid response from server');
+        console.error('Chyba při zpracování odpovědi:', e);
+        throw new Error('Neplatná odpověď ze serveru');
       }
 
       if (result.success && result.links) {
         // Set the download links from the API response
         setDownloadLinks(result.links);
-        toast.success(`${templates.length} documents generated successfully!`);
+        toast.success(`${templates.length} ${templates.length === 1 ? 'dokument byl' : templates.length < 5 ? 'dokumenty byly' : 'dokumentů bylo'} úspěšně vygenerováno!`);
       } else {
-        throw new Error('Invalid response from server');
+        throw new Error('Neplatná odpověď ze serveru');
       }
     } catch (error) {
-      console.error("Error generating documents:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to generate documents. Please try again.");
+      console.error("Chyba při generování dokumentů:", error);
+      toast.error(error instanceof Error ? error.message : "Nepodařilo se vygenerovat dokumenty. Zkuste to prosím znovu.");
     } finally {
       setIsSubmitting(false);
     }
@@ -347,15 +347,47 @@ export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
                               <div className="flex flex-col space-y-1">
                                 <FormLabel>{value.title}</FormLabel>
                                 <div className="flex flex-wrap gap-1 mb-1">
-                                  {getTemplateNamesForField(key).map((name, index) => (
-                                    <Badge key={index} variant="outline" className="text-xs">
-                                      {name}
-                                    </Badge>
-                                  ))}
+                                  {getTemplateNamesForField(key).map((name, index) => {
+                                    // Assign different colors based on template name or index using Catalyst style
+                                    const colorVariants = [
+                                      'blue', 'green', 'purple', 'orange',
+                                      'teal', 'red', 'amber', 'gray',
+                                      'indigo', 'cyan', 'pink', 'lime',
+                                      'rose', 'sky', 'emerald', 'violet'
+                                    ];
+                                    const colorIndex = index % colorVariants.length;
+                                    const variant = colorVariants[colorIndex] as any;
+
+                                    return (
+                                      <Badge key={index} variant={variant} className="text-xs">
+                                        {name}
+                                      </Badge>
+                                    );
+                                  })}
                                 </div>
                               </div>
                               <FormControl>
-                                <Input {...field} />
+                                <Input
+                                  {...field}
+                                  type={
+                                    key.toLowerCase().includes('date') ||
+                                    key.toLowerCase().includes('birth') ||
+                                    key.toLowerCase().includes('narozeni') ||
+                                    key.toLowerCase().includes('datum') ? 'date' :
+                                    key.toLowerCase().includes('email') ? 'email' :
+                                    key.toLowerCase().includes('phone') ||
+                                    key.toLowerCase().includes('telefon') ? 'tel' :
+                                    key.toLowerCase().includes('number') ||
+                                    key.toLowerCase().includes('cislo') ||
+                                    key.toLowerCase().includes('ico') ||
+                                    key.toLowerCase().includes('dic') ? 'number' :
+                                    key.toLowerCase().includes('password') ||
+                                    key.toLowerCase().includes('heslo') ? 'password' :
+                                    key.toLowerCase().includes('url') ||
+                                    key.toLowerCase().includes('web') ? 'url' :
+                                    'text'
+                                  }
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -371,7 +403,7 @@ export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
 
           <div className="flex items-center">
             <Button type="submit" disabled={isSubmitting} className="w-full">
-              {isSubmitting ? "Generating..." : `Generate ${templates.length} Documents`}
+              {isSubmitting ? "Generuji..." : `Vygenerovat ${templates.length} ${templates.length === 1 ? 'dokument' : templates.length < 5 ? 'dokumenty' : 'dokumentů'}`}
             </Button>
 
             <SaveFormTemplateDialog
@@ -385,7 +417,7 @@ export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
 
       {Object.keys(downloadLinks).length > 0 && (
         <Card className="p-6 mt-8">
-          <h2 className="text-xl font-semibold mb-4">Generated Documents</h2>
+          <h2 className="text-xl font-semibold mb-4">Vygenerované dokumenty</h2>
           <div className="space-y-4">
             {templates.map((template) => {
               const links = downloadLinks[template.id];
@@ -407,14 +439,14 @@ export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
                     {links.docx && (
                       <Button asChild variant="outline" size="sm">
                         <a href={links.docx} download={`${templateName}.docx`}>
-                          Download DOCX
+                          Stáhnout DOCX
                         </a>
                       </Button>
                     )}
                     {links.pdf && (
                       <Button asChild size="sm">
                         <a href={links.pdf} download={`${templateName}.pdf`}>
-                          Download PDF
+                          Stáhnout PDF
                         </a>
                       </Button>
                     )}

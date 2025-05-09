@@ -79,11 +79,13 @@ export function UserManagement() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge variant="default">Aktivní</Badge>;
+        return <Badge variant="green">Aktivní</Badge>;
       case "pending":
-        return <Badge variant="outline">Čeká na potvrzení</Badge>;
+        return <Badge variant="amber">Čeká na potvrzení</Badge>;
       case "inactive":
-        return <Badge variant="secondary">Neaktivní</Badge>;
+        return <Badge variant="gray">Neaktivní</Badge>;
+      case "expired":
+        return <Badge variant="red">Vypršelo</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -93,11 +95,11 @@ export function UserManagement() {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case "admin":
-        return <Badge variant="default">Administrátor</Badge>;
+        return <Badge variant="purple">Administrátor</Badge>;
       case "editor":
-        return <Badge variant="secondary">Editor</Badge>;
+        return <Badge variant="teal">Editor</Badge>;
       case "user":
-        return <Badge variant="outline">Uživatel</Badge>;
+        return <Badge variant="blue">Uživatel</Badge>;
       default:
         return <Badge variant="outline">{role}</Badge>;
     }

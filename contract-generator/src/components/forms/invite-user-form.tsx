@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
 
@@ -110,7 +111,7 @@ export function InviteUserForm() {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input placeholder="email@example.com" {...field} />
+                  <Input type="email" placeholder="email@example.com" {...field} />
                 </FormControl>
                 <FormDescription>
                   Email uživatele, kterého chcete pozvat
@@ -151,9 +152,21 @@ export function InviteUserForm() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="admin">Administrátor</SelectItem>
-                  <SelectItem value="editor">Editor</SelectItem>
-                  <SelectItem value="user">Uživatel</SelectItem>
+                  <SelectItem value="admin">
+                    <div className="flex items-center">
+                      Administrátor <Badge variant="purple" className="ml-2">Plný přístup</Badge>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="editor">
+                    <div className="flex items-center">
+                      Editor <Badge variant="teal" className="ml-2">Rozšířený přístup</Badge>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="user">
+                    <div className="flex items-center">
+                      Uživatel <Badge variant="blue" className="ml-2">Základní přístup</Badge>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <FormDescription>
