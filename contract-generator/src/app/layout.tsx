@@ -5,7 +5,6 @@ import { Navbar } from "@/components/navbar";
 import { Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/components/auth/auth-provider";
-import { NextAuthProvider } from "@/components/auth/session-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,30 +37,28 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <NextAuthProvider>
-            <AuthProvider>
-              {/* The AuthProvider will handle authentication state */}
-              <div className="relative flex min-h-screen flex-col bg-background">
-                <Navbar />
-                <main className="flex-1">{children}</main>
-                <footer className="border-t py-6 md:py-8">
-                  <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col sm:flex-row justify-between items-center">
+          <AuthProvider>
+            {/* The AuthProvider will handle authentication state */}
+            <div className="relative flex min-h-screen flex-col bg-background">
+              <Navbar />
+              <main className="flex-1">{children}</main>
+              <footer className="border-t py-6 md:py-8">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="flex flex-col sm:flex-row justify-between items-center">
+                    <p className="text-sm text-muted-foreground">
+                      &copy; {new Date().getFullYear()} Contract Generator. All rights reserved.
+                    </p>
+                    <div className="mt-4 sm:mt-0">
                       <p className="text-sm text-muted-foreground">
-                        &copy; {new Date().getFullYear()} Contract Generator. All rights reserved.
+                        Powered by Next.js and Cloudflare
                       </p>
-                      <div className="mt-4 sm:mt-0">
-                        <p className="text-sm text-muted-foreground">
-                          Powered by Next.js and Cloudflare
-                        </p>
-                      </div>
                     </div>
                   </div>
-                </footer>
-              </div>
-              <Sonner />
-            </AuthProvider>
-          </NextAuthProvider>
+                </div>
+              </footer>
+            </div>
+            <Sonner />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -3,7 +3,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getCookie, setCookie, deleteCookie, triggerAuthChangeEvent } from '@/lib/auth-utils';
-import { signIn, signOut, useSession } from 'next-auth/react';
 
 interface AuthUser {
   id?: string;
@@ -31,28 +30,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session, status } = useSession();
 
-  // Handle NextAuth session changes
+  // Check if user is authenticated with our custom cookie
   useEffect(() => {
-    if (status === 'loading') {
-      setIsLoading(true);
-      return;
-    }
-
-    if (session && session.user) {
-      setUser({
-        id: session.user.id,
-        email: session.user.email || 'user@example.com',
-        name: session.user.name || 'User',
-        role: session.user.role || 'user',
-        image: session.user.image,
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    // Check if user is authenticated with our custom cookie
     const checkAuth = () => {
       try {
         // Use our utility function to check for the auth token
@@ -102,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Server-side rendering - set loading to false
       setIsLoading(false);
     }
-  }, [session, status]);
+  }, []);
 
   const login = async (email: string): Promise<boolean> => {
     setIsLoading(true);
@@ -153,8 +133,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Get the return URL from the search params or use the homepage
       const returnUrl = searchParams?.get('returnUrl') || '/';
 
-      // Use NextAuth to sign in with Google
-      await signIn('google', { callbackUrl: returnUrl });
+      // In a real implementation, we would redirect to Google OAuth
+      // For now, we'll simulate a successful login
+
+      // Set a cookie with the auth token
+      setCookie('auth-token', 'google-demo-token', {
+        maxAge: 86400,
+        SameSite: 'Lax'
+      });
+
+      // Set user data
+      setUser({
+        id: 'google-user-id',
+        email: 'google-user@example.com',
+        name: 'Google User',
+        role: 'user',
+        image: 'https://via.placeholder.com/150',
+      });
+
+      // Trigger auth change events
+      triggerAuthChangeEvent();
+
+      // Redirect to the return URL
+      router.push(returnUrl);
     } catch (error) {
       console.error('Google login error:', error);
     } finally {
@@ -168,8 +169,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Get the return URL from the search params or use the homepage
       const returnUrl = searchParams?.get('returnUrl') || '/';
 
-      // Use NextAuth to sign in with Apple
-      await signIn('apple', { callbackUrl: returnUrl });
+      // In a real implementation, we would redirect to Apple OAuth
+      // For now, we'll simulate a successful login
+
+      // Set a cookie with the auth token
+      setCookie('auth-token', 'apple-demo-token', {
+        maxAge: 86400,
+        SameSite: 'Lax'
+      });
+
+      // Set user data
+      setUser({
+        id: 'apple-user-id',
+        email: 'apple-user@example.com',
+        name: 'Apple User',
+        role: 'user',
+        image: 'https://via.placeholder.com/150',
+      });
+
+      // Trigger auth change events
+      triggerAuthChangeEvent();
+
+      // Redirect to the return URL
+      router.push(returnUrl);
     } catch (error) {
       console.error('Apple login error:', error);
     } finally {
@@ -182,14 +204,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear the auth cookie
       deleteCookie('auth-token', { SameSite: 'Lax' });
 
-      // Sign out from NextAuth
-      signOut({ callbackUrl: '/login' });
-
       // Clear user data
       setUser(null);
 
       // Trigger auth change events
       triggerAuthChangeEvent();
+
+      // Redirect to login page
+      router.push('/login');
+      router.refresh();
     } catch (error) {
       console.error('Logout error:', error);
     }

@@ -1,13 +1,15 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getCookie, setCookie, deleteCookie, triggerAuthChangeEvent } from '@/lib/auth-utils';
 
 interface AuthUser {
+  id?: string;
   email: string;
   name: string;
   role: string;
+  image?: string;
 }
 
 interface AuthContextType {
@@ -16,6 +18,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   login: (email: string) => Promise<boolean>;
+  loginWithGoogle: () => Promise<void>;
+  loginWithApple: () => Promise<void>;
   logout: (redirectUrl?: string) => void;
 }
 
@@ -25,9 +29,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Check if user is authenticated
+    // Check if user is authenticated with our custom cookie
     const checkAuth = () => {
       try {
         // Use our utility function to check for the auth token
@@ -62,9 +67,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const handleStorageChange = () => {
         checkAuth();
       };
-
-      // Create a custom event for auth changes
-      const authChangeEvent = new Event('authChange');
 
       // Listen for storage events (for cross-tab synchronization)
       window.addEventListener('storage', handleStorageChange);
@@ -125,6 +127,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithGoogle = async (): Promise<void> => {
+    setIsLoading(true);
+    try {
+      // Get the return URL from the search params or use the homepage
+      const returnUrl = searchParams?.get('returnUrl') || '/';
+
+      // In a real implementation, we would redirect to Google OAuth
+      // For now, we'll simulate a successful login
+
+      // Set a cookie with the auth token
+      setCookie('auth-token', 'google-demo-token', {
+        maxAge: 86400,
+        SameSite: 'Lax'
+      });
+
+      // Set user data
+      setUser({
+        id: 'google-user-id',
+        email: 'google-user@example.com',
+        name: 'Google User',
+        role: 'user',
+        image: 'https://via.placeholder.com/150',
+      });
+
+      // Trigger auth change events
+      triggerAuthChangeEvent();
+
+      // Redirect to the return URL
+      router.push(returnUrl);
+    } catch (error) {
+      console.error('Google login error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithApple = async (): Promise<void> => {
+    setIsLoading(true);
+    try {
+      // Get the return URL from the search params or use the homepage
+      const returnUrl = searchParams?.get('returnUrl') || '/';
+
+      // In a real implementation, we would redirect to Apple OAuth
+      // For now, we'll simulate a successful login
+
+      // Set a cookie with the auth token
+      setCookie('auth-token', 'apple-demo-token', {
+        maxAge: 86400,
+        SameSite: 'Lax'
+      });
+
+      // Set user data
+      setUser({
+        id: 'apple-user-id',
+        email: 'apple-user@example.com',
+        name: 'Apple User',
+        role: 'user',
+        image: 'https://via.placeholder.com/150',
+      });
+
+      // Trigger auth change events
+      triggerAuthChangeEvent();
+
+      // Redirect to the return URL
+      router.push(returnUrl);
+    } catch (error) {
+      console.error('Apple login error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = (redirectUrl = '/login') => {
     try {
       // Clear the auth cookie
@@ -150,6 +224,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
     login,
+    loginWithGoogle,
+    loginWithApple,
     logout,
   };
 

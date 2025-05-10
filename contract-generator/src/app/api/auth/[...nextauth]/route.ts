@@ -1,4 +1,5 @@
 import NextAuth from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import AppleProvider from "next-auth/providers/apple";
 import { cookies } from "next/headers";
@@ -9,10 +10,33 @@ export const runtime = "edge";
 // Configure NextAuth
 const handler = NextAuth({
   providers: [
+    // Credentials provider for email login
+    CredentialsProvider({
+      name: "Email",
+      credentials: {
+        email: { label: "Email", type: "email" },
+      },
+      async authorize(credentials) {
+        // This is a simplified demo implementation
+        // In a real app, you would validate against a database
+        if (credentials?.email) {
+          return {
+            id: "email-user",
+            email: credentials.email,
+            name: credentials.email.split('@')[0],
+            image: null,
+            role: "user",
+          };
+        }
+        return null;
+      },
+    }),
+    // Google provider
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "placeholder-client-id",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "placeholder-client-secret",
     }),
+    // Apple provider
     AppleProvider({
       clientId: process.env.APPLE_CLIENT_ID || "placeholder-client-id",
       clientSecret: process.env.APPLE_CLIENT_SECRET || "placeholder-client-secret",
@@ -60,7 +84,7 @@ const handler = NextAuth({
       if (!user.email) {
         return false;
       }
-      
+
       // Set a cookie to indicate the user is authenticated
       // This is used by the client-side auth provider
       cookies().set("auth-token", "authenticated", {
@@ -69,7 +93,7 @@ const handler = NextAuth({
         maxAge: 30 * 24 * 60 * 60,
         path: "/",
       });
-      
+
       return true;
     },
   },
