@@ -1,8 +1,15 @@
 "use client";
 
 import React from "react";
+import { cn } from "@/lib/utils";
 
-export function LoadingSpinner({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
+export function LoadingSpinner({
+  size = "md",
+  className
+}: {
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
   const sizeClasses = {
     sm: "h-4 w-4 border-2",
     md: "h-8 w-8 border-3",
@@ -11,7 +18,11 @@ export function LoadingSpinner({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
 
   return (
     <div
-      className={`${sizeClasses[size]} animate-spin rounded-full border-solid border-primary border-t-transparent`}
+      className={cn(
+        "animate-spin rounded-full border-solid border-primary border-t-transparent",
+        sizeClasses[size],
+        className
+      )}
       role="status"
       aria-label="Loading"
     />
