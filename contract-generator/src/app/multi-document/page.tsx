@@ -1,123 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { UseCaseShortcuts } from "@/components/use-case-shortcuts";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileText, Plus, ArrowRight, Loader2 } from "lucide-react";
 
-// Mock data for templates - will be replaced with API data
-const templates = [
-  // Basic contracts
-  {
-    id: "smlouva-o-dilo",
-    name: "Smlouva o dílo",
-    description: "B2B Smlouva o dílo (vzor)",
-    tags: ["business", "contract"]
-  },
-  {
-    id: "dohoda-o-provedeni-prace",
-    name: "Dohoda o provedení práce",
-    description: "DPP (zaměstnanec ≤300 hod/rok)",
-    tags: ["employment", "contract"]
-  },
-  {
-    id: "kupni-smlouva",
-    name: "Kupní smlouva",
-    description: "Standardní kupní smlouva na movitou věc",
-    tags: ["purchase", "contract"]
-  },
+// Loading component for Suspense fallback
+function MultiDocumentLoading() {
+  return (
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <div className="h-6 w-32 bg-muted rounded animate-pulse mb-4"></div>
+          <div className="h-10 w-64 bg-muted rounded animate-pulse mb-3"></div>
+          <div className="h-6 w-96 bg-muted rounded animate-pulse"></div>
+        </div>
+        <div className="h-96 bg-muted rounded animate-pulse"></div>
+      </div>
+    </div>
+  );
+}
 
-  // Company formation documents
-  {
-    id: "poa-zalozeni-statutar",
-    name: "Plná moc - založení statutár",
-    description: "Plná moc pro založení společnosti a statutárního orgánu",
-    tags: ["company", "formation", "power of attorney"]
-  },
-  {
-    id: "affidavit-sr",
-    name: "Affidavit SR",
-    description: "Čestné prohlášení pro Slovenský obchodní rejstřík",
-    tags: ["company", "formation", "affidavit"]
-  },
-  {
-    id: "stanovy",
-    name: "Stanovy společnosti",
-    description: "Stanovy akciové společnosti",
-    tags: ["company", "formation", "articles"]
-  },
-  {
-    id: "affidavit-statutar",
-    name: "Affidavit statutár",
-    description: "Čestné prohlášení statutárního orgánu",
-    tags: ["company", "formation", "affidavit"]
-  },
-  {
-    id: "poa-rt",
-    name: "Plná moc RT",
-    description: "Plná moc pro rejstříkový soud",
-    tags: ["company", "formation", "power of attorney"]
-  },
-  {
-    id: "poa-shareholder",
-    name: "Plná moc akcionář",
-    description: "Plná moc pro akcionáře",
-    tags: ["company", "formation", "power of attorney"]
-  },
-  {
-    id: "poa-statutar",
-    name: "Plná moc statutár",
-    description: "Plná moc pro statutární orgán",
-    tags: ["company", "formation", "power of attorney"]
-  },
-  {
-    id: "rozhodnuti-umisteni-sidla",
-    name: "Rozhodnutí o umístění sídla",
-    description: "Rozhodnutí o umístění sídla společnosti",
-    tags: ["company", "formation", "registered office"]
-  },
-  {
-    id: "souhlas-umisteni-sidla",
-    name: "Souhlas s umístěním sídla",
-    description: "Souhlas s umístěním sídla společnosti",
-    tags: ["company", "formation", "registered office"]
-  },
-  {
-    id: "prohlaseni-spravce-vkladu",
-    name: "Prohlášení správce vkladu",
-    description: "Prohlášení správce vkladu při založení společnosti",
-    tags: ["company", "formation", "capital"]
-  }
-];
-
-export default function MultiDocumentPage() {
-  const [selectedTemplates, setSelectedTemplates] = useState<string[]>([]);
+// Main component content
+function MultiDocumentContent() {
   const router = useRouter();
 
-  const handleTemplateToggle = (templateId: string) => {
-    setSelectedTemplates((prev: string[]) =>
-      prev.includes(templateId)
-        ? prev.filter(id => id !== templateId)
-        : [...prev, templateId]
-    );
-  };
-
-  const handleSelectUseCase = (templateIds: string[]) => {
-    // Set the selected templates to the ones from the use case
-    setSelectedTemplates(templateIds);
-  };
-
-  const handleContinue = () => {
-    if (selectedTemplates.length === 0) {
-      return;
-    }
-
-    // Create a comma-separated list of template IDs
-    const templateIds = selectedTemplates.join(',');
-    router.push(`/multi-document/form?templates=${templateIds}`);
+  const handleCreateNew = () => {
+    router.push("/multi-document/form");
   };
 
   return (
@@ -142,126 +53,195 @@ export default function MultiDocumentPage() {
             Zpět na hlavní stránku
           </a>
           <h1 className="text-4xl font-bold mb-3">Generátor více dokumentů</h1>
-          <p className="text-lg text-muted-foreground mb-6">
-            Vyberte více dokumentů pro generování najednou pomocí jednoho formuláře.
+          <p className="text-lg text-muted-foreground">
+            Vytvořte sadu souvisejících právních dokumentů na základě jednoho formuláře
           </p>
         </div>
 
-        {/* Use Case Shortcuts - Quick selection of predefined document sets */}
-        <div className="bg-card p-8 rounded-lg border shadow-sm mb-8">
-          <UseCaseShortcuts
-            onSelectUseCase={handleSelectUseCase}
-            selectedTemplateIds={selectedTemplates}
-          />
-        </div>
+        <Tabs defaultValue="recent" className="mb-8">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="recent">Nedávné dokumenty</TabsTrigger>
+            <TabsTrigger value="templates">Šablony</TabsTrigger>
+            <TabsTrigger value="favorites">Oblíbené</TabsTrigger>
+          </TabsList>
 
-        <div className="bg-card p-8 rounded-lg border shadow-sm mb-8">
-          <h2 className="text-2xl font-semibold mb-6">Vyberte dokumenty</h2>
-          {templates.length > 0 ? (
-            <div className="space-y-8">
-              {/* Basic contracts section */}
-              <div>
-                <h3 className="text-xl font-semibold mb-4 border-b pb-2">Základní smlouvy</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {templates.slice(0, 3).map((template) => (
-                    <Card
-                      key={template.id}
-                      className={`flex flex-col hover:shadow-md transition-shadow duration-300 ${
-                        selectedTemplates.includes(template.id) ? 'border-primary ring-1 ring-primary' : ''
-                      }`}
-                    >
-                      <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <CardTitle className="text-xl">{template.name}</CardTitle>
-                            <CardDescription className="text-sm">{template.description}</CardDescription>
-                          </div>
-                          <Checkbox
-                            checked={selectedTemplates.includes(template.id)}
-                            onCheckedChange={() => handleTemplateToggle(template.id)}
-                            className="h-5 w-5"
-                          />
-                        </div>
-                      </CardHeader>
-                      <CardContent className="flex-grow pt-2">
-                        <div className="flex flex-wrap gap-2">
-                          {template.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="bg-muted text-muted-foreground px-2 py-1 rounded-md text-xs font-medium"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
+          <TabsContent value="recent" className="mt-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* New Document Card */}
+              <Card className="border-dashed hover:border-primary hover:bg-muted/50 transition-colors cursor-pointer" onClick={handleCreateNew}>
+                <CardContent className="flex flex-col items-center justify-center h-full py-10">
+                  <div className="rounded-full bg-primary/10 p-3 mb-4">
+                    <Plus className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-medium mb-1">Vytvořit novou sadu</h3>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Začněte s novou sadou dokumentů
+                  </p>
+                </CardContent>
+              </Card>
 
-              {/* Company formation documents section */}
-              <div>
-                <h3 className="text-xl font-semibold mb-4 border-b pb-2">Dokumenty pro založení společnosti</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {templates.slice(3).map((template) => (
-                    <Card
-                      key={template.id}
-                      className={`flex flex-col hover:shadow-md transition-shadow duration-300 ${
-                        selectedTemplates.includes(template.id) ? 'border-primary ring-1 ring-primary' : ''
-                      }`}
-                    >
-                      <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <CardTitle className="text-xl">{template.name}</CardTitle>
-                            <CardDescription className="text-sm">{template.description}</CardDescription>
-                          </div>
-                          <Checkbox
-                            checked={selectedTemplates.includes(template.id)}
-                            onCheckedChange={() => handleTemplateToggle(template.id)}
-                            className="h-5 w-5"
-                          />
-                        </div>
-                      </CardHeader>
-                      <CardContent className="flex-grow pt-2">
-                        <div className="flex flex-wrap gap-2">
-                          {template.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="bg-muted text-muted-foreground px-2 py-1 rounded-md text-xs font-medium"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
+              {/* Example Document Sets */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Smlouva o dílo + přílohy</CardTitle>
+                  <CardDescription>Vytvořeno 12.5.2023</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-sm">
+                      <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>Smlouva o dílo.pdf</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>Příloha 1 - Specifikace.pdf</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>Příloha 2 - Harmonogram.pdf</span>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="w-full" asChild>
+                    <a href="/multi-document/detail/1">
+                      Zobrazit detail
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </a>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">GDPR dokumentace</CardTitle>
+                  <CardDescription>Vytvořeno 3.4.2023</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-sm">
+                      <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>Zásady zpracování osobních údajů.pdf</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>Souhlas se zpracováním.pdf</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>Informační memorandum.pdf</span>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="w-full" asChild>
+                    <a href="/multi-document/detail/2">
+                      Zobrazit detail
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </a>
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Žádné dokumenty nejsou k dispozici.</p>
-            </div>
-          )}
-        </div>
+          </TabsContent>
 
-        <div className="flex justify-between items-center">
-          <p className="text-sm text-muted-foreground">
-            {selectedTemplates.length} {selectedTemplates.length === 1 ? 'dokument vybrán' :
-              selectedTemplates.length >= 2 && selectedTemplates.length <= 4 ? 'dokumenty vybrány' : 'dokumentů vybráno'}
-          </p>
-          <Button
-            size="lg"
-            onClick={handleContinue}
-            disabled={selectedTemplates.length === 0}
-          >
-            Pokračovat
-          </Button>
-        </div>
+          <TabsContent value="templates" className="mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Pracovněprávní dokumentace</CardTitle>
+                  <CardDescription>5 dokumentů</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Kompletní sada dokumentů pro zaměstnavatele včetně pracovní smlouvy, mzdového výměru a dalších.
+                  </p>
+                  <Button className="w-full" asChild>
+                    <a href="/multi-document/form?template=employment">
+                      Použít šablonu
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </a>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Korporátní dokumentace</CardTitle>
+                  <CardDescription>3 dokumenty</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Základní dokumenty pro založení společnosti s ručením omezeným.
+                  </p>
+                  <Button className="w-full" asChild>
+                    <a href="/multi-document/form?template=corporate">
+                      Použít šablonu
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </a>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">GDPR balíček</CardTitle>
+                  <CardDescription>4 dokumenty</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Kompletní sada dokumentů pro zajištění souladu s GDPR.
+                  </p>
+                  <Button className="w-full" asChild>
+                    <a href="/multi-document/form?template=gdpr">
+                      Použít šablonu
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </a>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="favorites" className="mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Nájemní smlouva + předávací protokol</CardTitle>
+                  <CardDescription>Přidáno do oblíbených 15.3.2023</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-sm">
+                      <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>Nájemní smlouva.pdf</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>Předávací protokol.pdf</span>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="w-full" asChild>
+                    <a href="/multi-document/detail/3">
+                      Zobrazit detail
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </a>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
+  );
+}
+
+// Export the component wrapped in Suspense
+export default function MultiDocumentPage() {
+  // We don't actually use searchParams here, but we need to wrap it in Suspense
+  // because Next.js detected that we're using useSearchParams() somewhere
+  const searchParams = useSearchParams();
+  
+  return (
+    <Suspense fallback={<MultiDocumentLoading />}>
+      <MultiDocumentContent />
+    </Suspense>
   );
 }

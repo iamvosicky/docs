@@ -6,8 +6,9 @@
     "node": ">=20.10.0"
   },
   "scripts": {
-    "build": "cd contract-generator && bash ./cloudflare-build.sh",
-    "pages:deploy": "cd contract-generator && bash ./cloudflare-build.sh && wrangler pages deploy .vercel/output/static"
+    "build": "cd contract-generator && bash ./cloudflare-build-new.sh",
+    "build:original": "cd contract-generator && bash ./cloudflare-build.sh",
+    "pages:deploy": "cd contract-generator && bash ./cloudflare-build-new.sh && wrangler pages deploy .vercel/output/static"
   },
   "devDependencies": {
     "wrangler": "^4.14.1"

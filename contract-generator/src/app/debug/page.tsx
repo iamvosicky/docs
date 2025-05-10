@@ -1,9 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function DebugPage() {
+// Loading component for Suspense fallback
+function DebugPageLoading() {
+  return (
+    <div className="container mx-auto px-4 py-12">
+      <h1 className="text-3xl font-bold mb-6">Loading...</h1>
+      <p>Please wait while we load the debug page.</p>
+    </div>
+  );
+}
+
+// Main component content
+function DebugPageContent() {
   const [cookies, setCookies] = useState<string>('');
   const [authToken, setAuthToken] = useState<string | null>(null);
   const router = useRouter();
@@ -99,5 +110,18 @@ export default function DebugPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Export the component wrapped in Suspense
+export default function DebugPage() {
+  // We don't actually use searchParams here, but we need to wrap it in Suspense
+  // because Next.js detected that we're using useSearchParams() somewhere
+  const searchParams = useSearchParams();
+  
+  return (
+    <Suspense fallback={<DebugPageLoading />}>
+      <DebugPageContent />
+    </Suspense>
   );
 }

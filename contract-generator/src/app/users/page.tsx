@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import {
   Table,
   TableBody,
@@ -50,7 +50,28 @@ interface Invitation {
   status: string;
 }
 
-export default function UsersPage() {
+// Loading component for Suspense fallback
+function UsersPageLoading() {
+  return (
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-3">Správa uživatelů</h1>
+          <p className="text-lg text-muted-foreground">
+            Načítání...
+          </p>
+        </div>
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <span className="ml-3 text-xl">Načítání uživatelů...</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main component wrapped in Suspense
+function UsersPageContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("users");
   const [users, setUsers] = useState<User[]>([]);

@@ -4,13 +4,31 @@ import { InviteUserForm } from "@/components/forms/invite-user-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 // Sonner is added at the layout level
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
-export default function InvitePage() {
+// Loading component for Suspense fallback
+function InvitePageLoading() {
+  return (
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <div className="h-6 w-32 bg-muted rounded animate-pulse mb-4"></div>
+          <div className="h-10 w-64 bg-muted rounded animate-pulse mb-3"></div>
+          <div className="h-6 w-96 bg-muted rounded animate-pulse"></div>
+        </div>
+        <div className="h-96 bg-muted rounded animate-pulse"></div>
+      </div>
+    </div>
+  );
+}
+
+// Main component content
+function InvitePageContent() {
   const [activeTab, setActiveTab] = useState<string>('single');
   const [copied, setCopied] = useState(false);
   const inviteLink = "https://contract-generator.example.com/register?invite=ABC123";
@@ -133,5 +151,18 @@ export default function InvitePage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+// Export the component wrapped in Suspense
+export default function InvitePage() {
+  // We don't actually use searchParams here, but we need to wrap it in Suspense
+  // because Next.js detected that we're using useSearchParams() somewhere
+  const searchParams = useSearchParams();
+  
+  return (
+    <Suspense fallback={<InvitePageLoading />}>
+      <InvitePageContent />
+    </Suspense>
   );
 }
