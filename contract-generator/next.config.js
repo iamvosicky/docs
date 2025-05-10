@@ -22,6 +22,12 @@ const nextConfig = {
     config.resolve.modules.push('./src');
     return config;
   },
+
+  // Fix hydration issues
+  experimental: {
+    // This helps with hydration issues
+    optimizeCss: true,
+  },
 };
 
 module.exports = nextConfig;

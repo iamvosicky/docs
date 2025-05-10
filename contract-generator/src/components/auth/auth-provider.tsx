@@ -72,11 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.addEventListener('storage', handleStorageChange);
 
       // Listen for custom auth change events
-      window.addEventListener('authChange', handleStorageChange);
+      window.addEventListener('auth-change', handleStorageChange);
 
       return () => {
         window.removeEventListener('storage', handleStorageChange);
-        window.removeEventListener('authChange', handleStorageChange);
+        window.removeEventListener('auth-change', handleStorageChange);
       };
     } else {
       // Server-side rendering - set loading to false

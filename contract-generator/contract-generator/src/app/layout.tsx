@@ -5,6 +5,7 @@ import { Navbar } from "@/components/navbar";
 import { Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/components/auth/auth-provider";
+import { MaintenanceBanner } from "@/components/maintenance-banner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,6 +42,7 @@ export default function RootLayout({
             {/* The AuthProvider will handle authentication state */}
             <div className="relative flex min-h-screen flex-col bg-background">
               <Navbar />
+              <MaintenanceBanner />
               <main className="flex-1">{children}</main>
               <footer className="border-t py-6 md:py-8">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
