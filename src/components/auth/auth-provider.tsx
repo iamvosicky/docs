@@ -1,13 +1,16 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getCookie, setCookie, deleteCookie, triggerAuthChangeEvent } from '@/lib/auth-utils';
+import { signIn, signOut, useSession } from 'next-auth/react';
 
 interface AuthUser {
+  id?: string;
   email: string;
   name: string;
   role: string;
+  image?: string;
 }
 
 interface AuthContextType {
@@ -16,6 +19,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   login: (email: string) => Promise<boolean>;
+  loginWithGoogle: () => Promise<void>;
+  loginWithApple: () => Promise<void>;
   logout: () => void;
 }
 
@@ -25,9 +30,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
 
+  // Handle NextAuth session changes
   useEffect(() => {
-    // Check if user is authenticated
+    if (status === 'loading') {
+      setIsLoading(true);
+      return;
+    }
+
+    if (session && session.user) {
+      setUser({
+        id: session.user.id,
+        email: session.user.email || 'user@example.com',
+        name: session.user.name || 'User',
+        role: session.user.role || 'user',
+        image: session.user.image,
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    // Check if user is authenticated with our custom cookie
     const checkAuth = () => {
       try {
         // Use our utility function to check for the auth token
@@ -63,9 +88,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         checkAuth();
       };
 
-      // Create a custom event for auth changes
-      const authChangeEvent = new Event('authChange');
-
       // Listen for storage events (for cross-tab synchronization)
       window.addEventListener('storage', handleStorageChange);
 
@@ -80,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Server-side rendering - set loading to false
       setIsLoading(false);
     }
-  }, []);
+  }, [session, status]);
 
   const login = async (email: string): Promise<boolean> => {
     setIsLoading(true);
@@ -125,20 +147,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithGoogle = async (): Promise<void> => {
+    setIsLoading(true);
+    try {
+      // Get the return URL from the search params or use the homepage
+      const returnUrl = searchParams?.get('returnUrl') || '/';
+
+      // Use NextAuth to sign in with Google
+      await signIn('google', { callbackUrl: returnUrl });
+    } catch (error) {
+      console.error('Google login error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithApple = async (): Promise<void> => {
+    setIsLoading(true);
+    try {
+      // Get the return URL from the search params or use the homepage
+      const returnUrl = searchParams?.get('returnUrl') || '/';
+
+      // Use NextAuth to sign in with Apple
+      await signIn('apple', { callbackUrl: returnUrl });
+    } catch (error) {
+      console.error('Apple login error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = () => {
     try {
       // Clear the auth cookie
       deleteCookie('auth-token', { SameSite: 'Lax' });
+
+      // Sign out from NextAuth
+      signOut({ callbackUrl: '/login' });
 
       // Clear user data
       setUser(null);
 
       // Trigger auth change events
       triggerAuthChangeEvent();
-
-      // Redirect to login page
-      router.push('/login');
-      router.refresh();
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -150,6 +201,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
     login,
+    loginWithGoogle,
+    loginWithApple,
     logout,
   };
 
