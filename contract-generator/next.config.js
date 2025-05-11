@@ -1,10 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone',
 
-  // Fix for outputFileTracingRoot
-  outputFileTracingRoot: __dirname,
+  // Use 'export' output for static site generation
+  output: 'export',
 
   // Ignore ESLint errors during build
   eslint: {
@@ -14,6 +13,11 @@ const nextConfig = {
   // Ignore TypeScript errors during build
   typescript: {
     ignoreBuildErrors: true,
+  },
+
+  // Configure images for static export
+  images: {
+    unoptimized: true,
   },
 
   // Ensure all files are included in the build
@@ -28,6 +32,10 @@ const nextConfig = {
     // This helps with hydration issues
     optimizeCss: true,
   },
+
+  // Skip API routes for static export
+  skipTrailingSlashRedirect: true,
+  skipMiddlewareUrlNormalize: true,
 };
 
 module.exports = nextConfig;

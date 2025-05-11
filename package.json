@@ -6,11 +6,12 @@
     "node": ">=20.10.0"
   },
   "scripts": {
-    "build": "bash ./cloudflare-build-nextjs.sh",
+    "build": "bash ./cloudflare-build-simple.sh",
+    "build:nextjs": "bash ./cloudflare-build-nextjs.sh",
     "build:static": "cd contract-generator && bash ./cloudflare-build-static.sh",
     "build:original": "cd contract-generator && bash ./cloudflare-build.sh",
     "build:new": "cd contract-generator && bash ./cloudflare-build-new.sh",
-    "pages:deploy": "bash ./cloudflare-build-nextjs.sh && wrangler pages deploy .vercel/output/static"
+    "pages:deploy": "bash ./cloudflare-build-simple.sh && wrangler pages deploy .vercel/output/static"
   },
   "devDependencies": {
     "wrangler": "^4.14.1"
