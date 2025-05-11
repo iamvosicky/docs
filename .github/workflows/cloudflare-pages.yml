@@ -24,7 +24,7 @@ jobs:
         run: npm ci
 
       - name: Build static site
-        run: bash ./cloudflare-build-simple.sh
+        run: bash ./cloudflare-build-fixed.sh
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
@@ -32,5 +32,5 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: docs
-          directory: .vercel/output/static
+          directory: contract-generator/.vercel/output/static
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
