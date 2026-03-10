@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Dohoda o provedení práce</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.5; }
+    h1 { text-align: center; margin-bottom: 30px; }
+    h2 { margin-top: 20px; margin-bottom: 10px; }
+    .date { text-align: right; margin-bottom: 30px; }
+    .section { margin-bottom: 20px; }
+    .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
+    .signature { width: 45%; }
+    .signature-line { border-top: 1px solid #000; margin-top: 50px; }
+    .bold { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>DOHODA O PROVEDENÍ PRÁCE</h1>
+  <p class="date">V Praze dne {{DATUM_PODPISU}}</p>
+  
+  <div class="section">
+    <h2>I. Smluvní strany</h2>
+    <p><span class="bold">Zaměstnavatel:</span><br>
+    {{KUP_JMENO}}<br>
+    Sídlo: {{KUP_ADRESA}}<br>
+    IČO: {{KUP_ICO}}<br>
+    DIČ: {{KUP_DIC}}<br>
+    Zastoupený: {{KUP_ZASTUPCE}}<br>
+    (dále jen "Zaměstnavatel")</p>
+    
+    <p><span class="bold">Zaměstnanec:</span><br>
+    {{PROD_JMENO}}<br>
+    Bydliště: {{PROD_ADRESA}}<br>
+    Datum narození: {{PROD_DATUM_NAROZENI}}<br>
+    Číslo účtu: {{PROD_CISLO_UCTU}}<br>
+    (dále jen "Zaměstnanec")</p>
+  </div>
+  
+  <div class="section">
+    <h2>II. Předmět dohody</h2>
+    <p>Zaměstnanec se zavazuje pro zaměstnavatele vykonávat práci: {{DRUH_PRACE}}</p>
+    <p>Rozsah práce: {{ROZSAH_PRACE}} hodin</p>
+  </div>
+  
+  <div class="section">
+    <h2>III. Odměna</h2>
+    <p>Za řádně vykonanou práci náleží zaměstnanci odměna ve výši {{ODMENA}} Kč za hodinu.</p>
+    <p>Odměna je splatná v měsíčních intervalech, vždy k 15. dni následujícího měsíce.</p>
+  </div>
+  
+  <div class="section">
+    <h2>IV. Doba trvání dohody</h2>
+    <p>Tato dohoda se uzavírá na dobu určitou od {{TERMIN_ZAHAJENI}} do {{TERMIN_UKONCENI}}.</p>
+  </div>
+  
+  <div class="section">
+    <h2>V. Závěrečná ustanovení</h2>
+    <p>Tato dohoda nabývá platnosti a účinnosti dnem podpisu oběma smluvními stranami.</p>
+    <p>Dohoda je vyhotovena ve dvou stejnopisech, z nichž každá smluvní strana obdrží po jednom vyhotovení.</p>
+    <p>Smluvní strany prohlašují, že si dohodu přečetly, s jejím obsahem souhlasí a na důkaz toho připojují své podpisy.</p>
+  </div>
+  
+  <div class="signatures">
+    <div class="signature">
+      <p class="signature-line">Zaměstnavatel</p>
+    </div>
+    <div class="signature">
+      <p class="signature-line">Zaměstnanec</p>
+    </div>
+  </div>
+</body>
+</html>

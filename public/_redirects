@@ -1,0 +1,8 @@
+# Redirect domain aliases to primary domain
+https://contract-generator-old.pages.dev/* https://contract-generator.pages.dev/:splat 301!
+
+# Optional: Redirect default Netlify subdomain to primary domain
+https://contract-generator-netlify.netlify.app/* https://contract-generator.pages.dev/:splat 301!
+
+# Handle 404s
+/* /index.html 200
