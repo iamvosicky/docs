@@ -70,6 +70,8 @@ function UsersPageLoading() {
   );
 }
 
+export const dynamic = 'force-dynamic';
+
 // Main component wrapped in Suspense
 function UsersPageContent() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -358,5 +360,13 @@ function UsersPageContent() {
         </Tabs>
       </div>
     </div>
+  );
+}
+
+export default function UsersPage() {
+  return (
+    <Suspense fallback={<UsersPageLoading />}>
+      <UsersPageContent />
+    </Suspense>
   );
 }

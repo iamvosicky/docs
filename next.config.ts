@@ -2,30 +2,27 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  reactStrictMode: true,
+  output: 'standalone',
   turbopack: {
     root: path.resolve(__dirname),
   },
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // !! WARN !!
     ignoreBuildErrors: true,
   },
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
+  images: {
+    unoptimized: true,
+  },
   experimental: {
-    // Disable strict mode for dynamic APIs
     serverActions: {
       allowedOrigins: ["*"],
     },
   },
-  // Cloudflare Pages specific configuration
-  output: 'standalone',
+  skipTrailingSlashRedirect: true,
+  skipMiddlewareUrlNormalize: true,
 };
 
 export default nextConfig;

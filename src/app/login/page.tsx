@@ -4,29 +4,47 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FileText, Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { FileText, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = searchParams?.get('returnUrl') || '/app';
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
 
-    document.cookie = "auth-token=test-token; path=/; max-age=86400";
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    // Dispatch auth change event
-    window.dispatchEvent(new Event('auth-change'));
+      const data = await res.json();
 
-    setTimeout(() => {
+      if (!res.ok) {
+        setError(data.error || 'Přihlášení se nezdařilo');
+        setIsLoading(false);
+        return;
+      }
+
+      // Cookie is set by the server (HttpOnly) — trigger client-side event
+      window.dispatchEvent(new Event('auth-change'));
+
       router.push(returnUrl);
       router.refresh();
-    }, 600);
+    } catch {
+      setError('Chyba připojení k serveru');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -37,24 +55,29 @@ export default function LoginPage() {
           <div className="inline-flex h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-[oklch(0.6_0.2_310)] items-center justify-center mb-4">
             <FileText className="h-6 w-6 text-white" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Vítejte zpět</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Vitejte zpet</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Přihlaste se pro přístup k dokumentům
+            Prihlaste se pro pristup k dokumentum
           </p>
         </div>
 
         {/* Login Card */}
         <div className="glass-card rounded-2xl p-6 space-y-5">
+          {/* Error message */}
+          {error && (
+            <div className="bg-destructive/10 text-destructive text-sm px-4 py-3 rounded-xl">
+              {error}
+            </div>
+          )}
+
           {/* Social buttons */}
           <div className="grid grid-cols-2 gap-3">
             <Button
               variant="outline"
               className="rounded-xl h-11"
               onClick={() => {
-                document.cookie = "auth-token=google-token; path=/; max-age=86400";
-                window.dispatchEvent(new Event('auth-change'));
-                router.push(returnUrl);
-                router.refresh();
+                // TODO: Implement real Google OAuth via NextAuth
+                window.location.href = '/api/auth/signin/google';
               }}
             >
               <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24">
@@ -69,10 +92,8 @@ export default function LoginPage() {
               variant="outline"
               className="rounded-xl h-11"
               onClick={() => {
-                document.cookie = "auth-token=apple-token; path=/; max-age=86400";
-                window.dispatchEvent(new Event('auth-change'));
-                router.push(returnUrl);
-                router.refresh();
+                // TODO: Implement real Apple OAuth via NextAuth
+                window.location.href = '/api/auth/signin/apple';
               }}
             >
               <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
@@ -92,7 +113,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Email form */}
+          {/* Email + Password form */}
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -106,6 +127,19 @@ export default function LoginPage() {
               />
             </div>
 
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pl-10 h-11 rounded-xl"
+                placeholder="Heslo"
+                required
+                minLength={4}
+              />
+            </div>
+
             <Button
               type="submit"
               className="w-full h-11 rounded-xl"
@@ -114,27 +148,33 @@ export default function LoginPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Přihlašování...
+                  Prihlasovani...
                 </>
               ) : (
                 <>
-                  Přihlásit se
+                  Prihlasit se
                   <ArrowRight className="h-4 w-4 ml-1" />
                 </>
               )}
             </Button>
           </form>
+
+          {/* Demo credentials hint */}
+          <div className="text-xs text-muted-foreground text-center space-y-1">
+            <p>Demo: admin@docs.cz / admin123</p>
+            <p>Demo: user@docs.cz / user123</p>
+          </div>
         </div>
 
         {/* Footer */}
         <p className="text-center text-xs text-muted-foreground mt-6">
-          Přihlášením souhlasíte s{' '}
+          Prihlasenim souhlasit s{' '}
           <Link href="#" className="underline underline-offset-4 hover:text-foreground transition-colors">
-            podmínkami použití
+            podminkami pouziti
           </Link>{' '}
           a{' '}
           <Link href="#" className="underline underline-offset-4 hover:text-foreground transition-colors">
-            ochranou údajů
+            ochranou udaju
           </Link>
           .
         </p>
