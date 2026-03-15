@@ -231,22 +231,22 @@
   color: rgba(255 255 255 / 0.4) !important;
 }
 .landing-cards .group .tag-pill {
-  background: rgba(52 211 153 / 0.1) !important;
-  border-color: rgba(52 211 153 / 0.2) !important;
-  color: rgba(52 211 153 / 0.8) !important;
+  background: rgba(139 92 246 / 0.1) !important;
+  border-color: rgba(139 92 246 / 0.2) !important;
+  color: rgba(139 92 246 / 0.8) !important;
 }
 .landing-cards .group svg {
   color: rgba(255 255 255 / 0.3) !important;
 }
 .landing-cards .group .tag-pill svg {
-  color: rgba(52 211 153 / 0.6) !important;
+  color: rgba(139 92 246 / 0.6) !important;
 }
 .landing-cards .group > a > div > div:first-child,
 .landing-cards .group .bg-secondary {
-  background: rgba(52 211 153 / 0.1) !important;
+  background: rgba(139 92 246 / 0.1) !important;
 }
 .landing-cards .group .bg-secondary svg {
-  color: rgba(52 211 153 / 0.7) !important;
+  color: rgba(139 92 246 / 0.7) !important;
 }
 .landing-cards .text-muted-foreground {
   color: rgba(255 255 255 / 0.3) !important;

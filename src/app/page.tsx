@@ -26,13 +26,13 @@ function LandingPage() {
       <section className="relative overflow-hidden">
         {/* Glow effects */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[radial-gradient(ellipse_at_center,oklch(0.45_0.18_265/0.15),transparent_70%)] pointer-events-none" />
-        <div className="absolute top-20 right-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,oklch(0.5_0.2_150/0.08),transparent_70%)] pointer-events-none" />
+        <div className="absolute top-20 right-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,oklch(0.5_0.2_290/0.08),transparent_70%)] pointer-events-none" />
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-32 pb-8 sm:pb-12 relative">
           {/* Nav hint */}
           <div className="flex justify-center mb-10 sm:mb-14">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-sm text-white/60">
-              <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <div className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
               Právní dokumenty nové generace
             </div>
           </div>
@@ -42,7 +42,7 @@ function LandingPage() {
               Připravte si právní
               <br />
               dokumenty{" "}
-              <span className="italic font-serif bg-gradient-to-r from-emerald-300 to-emerald-500 bg-clip-text text-transparent">
+              <span className="italic font-serif bg-gradient-to-r from-violet-300 to-violet-500 bg-clip-text text-transparent">
                 snadno
               </span>
             </h1>
@@ -75,13 +75,13 @@ function LandingPage() {
               {/* Top bar */}
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                    <FileText className="h-4 w-4 text-emerald-400" />
+                  <div className="h-8 w-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                    <FileText className="h-4 w-4 text-violet-400" />
                   </div>
                   <span className="text-sm font-medium text-white/80">Založení s.r.o.</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-emerald-400" />
+                  <div className="h-2 w-2 rounded-full bg-violet-400" />
                   <span className="text-xs text-white/40">Připraveno</span>
                 </div>
               </div>
@@ -115,7 +115,7 @@ function LandingPage() {
                       <span className="text-sm text-white/60">{doc.name}</span>
                     </div>
                     {doc.status ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                      <CheckCircle2 className="h-4 w-4 text-violet-400" />
                     ) : (
                       <div className="h-4 w-4 rounded-full border-2 border-white/10" />
                     )}
@@ -149,8 +149,8 @@ function LandingPage() {
               },
             ].map((f) => (
               <div key={f.title} className="rounded-2xl border border-white/8 bg-white/[0.02] p-6 group hover:border-white/15 transition-colors">
-                <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-4 group-hover:bg-emerald-500/20 transition-colors">
-                  <f.icon className="h-5 w-5 text-emerald-400" />
+                <div className="h-10 w-10 rounded-xl bg-violet-500/10 flex items-center justify-center mb-4 group-hover:bg-violet-500/20 transition-colors">
+                  <f.icon className="h-5 w-5 text-violet-400" />
                 </div>
                 <h3 className="font-semibold text-white/90 mb-1">{f.title}</h3>
                 <p className="text-sm text-white/40 leading-relaxed">{f.desc}</p>
@@ -166,7 +166,7 @@ function LandingPage() {
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-4">
               Vyberete situaci,{" "}
-              <span className="italic font-serif bg-gradient-to-r from-emerald-300 to-emerald-500 bg-clip-text text-transparent">
+              <span className="italic font-serif bg-gradient-to-r from-violet-300 to-violet-500 bg-clip-text text-transparent">
                 my připravíme dokumenty
               </span>
             </h2>
@@ -195,7 +195,7 @@ function LandingPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/30">
             <div className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
+              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center">
                 <FileText className="h-3 w-3 text-white" />
               </div>
               <span className="font-medium text-white/70">DocGen</span>
