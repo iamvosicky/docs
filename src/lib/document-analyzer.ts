@@ -857,6 +857,10 @@ function detectReplacements(text: string): {
       // Skip addresses in verification/certification sections
       if (isInVerificationSection(text, match.index)) continue;
       const textBefore = text.slice(0, match.index);
+      // Skip addresses that belong to a representative (not the party itself)
+      // e.g. "zastoupená jednatelem Gabrielou Černou, bytem Slavíčkova 372/2"
+      const sameLine = text.slice(text.lastIndexOf("\n", match.index) + 1, match.index).toLowerCase();
+      if (/(?:jednatel|ředitel|statutárn|předsed|prokur|zmocněn|advokát|zástupc)/i.test(sameLine)) continue;
       const role = resolveRole(match.index, textBefore);
       addReplacement(value, role, "address", "textarea", "Adresa", "Adresa", "Úplná adresa", true);
     }
@@ -1002,6 +1006,14 @@ function detectReplacements(text: string): {
       const textBefore = text.slice(0, match.index);
       if (!isLikelyPersonName(value, textBefore)) continue;
 
+      // Reject names that appear in representative/agent context — these people
+      // are NOT the contract party itself, just their representative.
+      // E.g. "zastoupená jednatelem Gabrielou Černou" — Gabriela Černá is not the Nabyvatel.
+      const before100 = textBefore.slice(-100).toLowerCase();
+      if (/(?:zastoupen[áý]?m?\s+)?(?:jednatel\w*|ředitel\w*|statutárn\w*|předsed\w*|prokur\w*|zmocněn\w*|advokát\w*|zástupc\w*)\s*$/i.test(before100)) continue;
+      // Also skip if preceded by "jednatelem", "ředitelem", etc. with possible declension
+      if (/(?:jednatelem|jednateli|jednatelkou|ředitelem|ředitelkou|předsedou|předsedkyní|prokuristou|advokátem|advokátkou|zástupcem|zmocněncem)\s*$/i.test(before100)) continue;
+
       // Reject declension variants of already-detected names
       // e.g. "Štěpánem Černohorským" when "Štěpán Černohorský" already detected
       if (isDeclensionVariant(value, detectedNames)) continue;
@@ -1036,11 +1048,16 @@ function detectReplacements(text: string): {
       const textBefore = text.slice(0, match.index);
       let role = resolveRole(match.index, textBefore);
 
-      // Amounts preceded by contract-level keywords (kupní cena, cena, celková částka)
-      // should not be assigned to a specific party — they belong to the contract itself
+      // Amounts in the contract body should not be assigned to a party role.
+      // They belong to contract-level sections like Úplata or Podíl.
       if (rule.namePrefix === "amount") {
-        const before80 = text.slice(Math.max(0, match.index - 100), match.index).toLowerCase();
-        if (/(?:kupní\s+cen|cena\s+(?:činí|je|bude)|celkov[áé]\s+(?:cen|částk)|sjednan[áé]\s+cen|dohodnut[áé]\s+cen)/.test(before80)) {
+        const before100 = text.slice(Math.max(0, match.index - 100), match.index).toLowerCase();
+        // Clear role if preceded by contract-level keywords or in body after role zones
+        if (/(?:kupní\s+cen|cena\s+(?:činí|je|bude)|celkov[áé]\s+(?:cen|částk)|sjednan[áé]\s+cen|dohodnut[áé]\s+cen|úplat|vklad|podíl|činí|splát)/.test(before100)) {
+          role = "";
+        }
+        // If explicit roles exist and amount is outside all role zones, clear role
+        if (roleZones.length > 0 && !findRoleByPosition(roleZones, match.index)) {
           role = "";
         }
       }
@@ -1064,7 +1081,11 @@ function detectReplacements(text: string): {
 
       // Check if it's a birth date context — if so, use birth_date naming
       const textBefore = text.slice(0, match.index);
-      const role = resolveRole(match.index, textBefore);
+      let role = resolveRole(match.index, textBefore);
+      // Dates outside role zones in the contract body should be contract-level (Termíny)
+      if (!isBirthDateContext(text, match.index) && roleZones.length > 0 && !findRoleByPosition(roleZones, match.index)) {
+        role = "";
+      }
       if (isBirthDateContext(text, match.index)) {
         addReplacement(value, role, "birth_date", "date", "Datum narození", "Ostatní", "Datum narození", true);
       } else {
