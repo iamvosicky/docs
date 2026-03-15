@@ -25,11 +25,49 @@ export interface EntityGroup {
   fields: string[]; // field names belonging to this entity
 }
 
+/** Structured contract party with all detected attributes grouped together */
+export interface ContractParty {
+  /** English role id (buyer, seller, tenant, landlord, etc.) */
+  role: string;
+  /** Czech label for the role */
+  label: string;
+  /** All detected attributes for this party, keyed by field type */
+  attributes: {
+    name?: string;
+    address?: string;
+    birthDate?: string;
+    birthNumber?: string;
+    companyName?: string;
+    companyId?: string;
+    taxId?: string;
+    bankAccount?: string;
+    email?: string;
+    phone?: string;
+    [key: string]: string | undefined;
+  };
+  /** Placeholder names belonging to this party */
+  fieldNames: string[];
+}
+
+/** Detected contract type */
+export type ContractType =
+  | "purchase"    // kupní smlouva
+  | "work"        // smlouva o dílo
+  | "lease"       // nájemní smlouva
+  | "employment"  // pracovní smlouva / DPP / DPČ
+  | "power"       // plná moc
+  | "loan"        // smlouva o půjčce / zápůjčce
+  | "other";
+
 export interface AnalysisResult {
   templateText: string;
   fields: DetectedField[];
   groups: string[];
   entities: EntityGroup[];
+  /** Structured contract parties with grouped attributes (no duplicate roles) */
+  parties: ContractParty[];
+  /** Detected contract type */
+  contractType: ContractType;
   optionalSections: string[];
   notes: string[];
   originalText: string;
@@ -319,6 +357,36 @@ function makeFieldName(prefix: string, role: string, ctx: FieldContext): string 
 /**
  * Count how many times a value appears in the text.
  */
+// ─── Contract type detection ───
+
+/** Detect the type of contract from the document text */
+function detectContractType(text: string): ContractType {
+  const lower = text.toLowerCase();
+
+  // Check patterns in order of specificity
+  if (/kupní\s+smlouv|smlouv\w*\s+kupní|koupě|prodej/i.test(lower)) return "purchase";
+  if (/nájemní\s+smlouv|smlouv\w*\s+o\s+nájmu|nájem\s|podnájem/i.test(lower)) return "lease";
+  if (/smlouv\w*\s+o\s+díl[oue]|zhotov/i.test(lower)) return "work";
+  if (/pracovní\s+smlouv|dohod\w*\s+o\s+proveden|dohod\w*\s+o\s+pracovní\s+činnost/i.test(lower)) return "employment";
+  if (/plná\s+moc|zmocn[ěi]/i.test(lower)) return "power";
+  if (/smlouv\w*\s+o\s+(?:půjč|zápůjč|úvěr)/i.test(lower)) return "loan";
+
+  return "other";
+}
+
+/** Map contract type to expected role pairs to avoid duplicate role assignment */
+const CONTRACT_ROLE_PAIRS: Record<ContractType, [string, string] | null> = {
+  purchase:   ["buyer", "seller"],
+  lease:      ["tenant", "landlord"],
+  work:       ["buyer", "seller"],       // objednatel=buyer, zhotovitel=seller
+  employment: ["employer", "employee"],
+  power:      ["principal", "attorney"],
+  loan:       ["creditor", "debtor"],
+  other:      null,
+};
+
+// ─── Full-span detection helpers ───
+
 function countOccurrences(text: string, value: string): number {
   const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const matches = text.match(new RegExp(escaped, "g"));
@@ -364,6 +432,8 @@ function isBirthDateContext(text: string, matchIndex: number): boolean {
 function detectReplacements(text: string): {
   replacements: { original: string; placeholder: string; field: DetectedField }[];
   entities: EntityGroup[];
+  parties: ContractParty[];
+  contractType: ContractType;
   notes: string[];
   optionalSections: string[];
 } {
@@ -683,7 +753,14 @@ function detectReplacements(text: string): {
   // Sort longest first to avoid partial replacement overlaps
   replacements.sort((a, b) => b.original.length - a.original.length);
 
-  // Build entity groups
+  // ──────────────────────────────────────────────────
+  // Contract type detection
+  // ──────────────────────────────────────────────────
+  const contractType = detectContractType(text);
+
+  // ──────────────────────────────────────────────────
+  // Build entity groups (legacy format, kept for backward compatibility)
+  // ──────────────────────────────────────────────────
   const entities: EntityGroup[] = [];
   for (const [role, fieldNames] of entityFields.entries()) {
     entities.push({
@@ -694,7 +771,132 @@ function detectReplacements(text: string): {
     });
   }
 
+  // ──────────────────────────────────────────────────
+  // Build structured contract parties (no duplicate roles)
+  // ──────────────────────────────────────────────────
+  const partyMap = new Map<string, ContractParty>();
+
+  /** Map field name prefix → attribute key on ContractParty */
+  const fieldToAttr: Record<string, string> = {
+    name: "name",
+    address: "address",
+    birth_date: "birthDate",
+    birth_number: "birthNumber",
+    company_name: "companyName",
+    company_id: "companyId",
+    tax_id: "taxId",
+    bank_account: "bankAccount",
+    email: "email",
+    phone: "phone",
+  };
+
+  for (const r of replacements) {
+    const field = r.field;
+    const role = field.entity || "";
+    if (!role) continue;
+
+    // Enforce single party per role: merge into existing party if role already seen
+    if (!partyMap.has(role)) {
+      partyMap.set(role, {
+        role,
+        label: roleToLabel(role),
+        attributes: {},
+        fieldNames: [],
+      });
+    }
+
+    const party = partyMap.get(role)!;
+    party.fieldNames.push(field.name);
+
+    // Determine attribute key from field name prefix (strip role prefix)
+    const fieldSuffix = field.name.startsWith(role + "_")
+      ? field.name.slice(role.length + 1).replace(/_\d+$/, "")
+      : field.name.replace(/_\d+$/, "");
+
+    const attrKey = fieldToAttr[fieldSuffix] || fieldSuffix;
+    // Only set if not already set (first occurrence wins — no overwrite)
+    if (!party.attributes[attrKey]) {
+      party.attributes[attrKey] = field.example;
+    }
+  }
+
+  // ── Merge auxiliary roles into main contract parties ──
+
+  // Roles that should be merged into the nearest main party, not standalone
+  const AUXILIARY_ROLES = new Set(["representative", "administrator", "shareholder"]);
+
+  const expectedPair = CONTRACT_ROLE_PAIRS[contractType];
+
+  // 1. Merge "company" into the appropriate main party
+  if (expectedPair && partyMap.has("company")) {
+    const companyParty = partyMap.get("company")!;
+    const hasRole1 = partyMap.has(expectedPair[0]);
+    const hasRole2 = partyMap.has(expectedPair[1]);
+
+    if (hasRole1 || hasRole2) {
+      // Merge into an existing main party
+      const targetRole = !hasRole2 ? expectedPair[1] : expectedPair[0];
+      if (partyMap.has(targetRole)) {
+        const target = partyMap.get(targetRole)!;
+        target.fieldNames.push(...companyParty.fieldNames);
+        for (const [k, v] of Object.entries(companyParty.attributes)) {
+          if (v && !target.attributes[k]) target.attributes[k] = v;
+        }
+      } else {
+        companyParty.role = targetRole;
+        companyParty.label = roleToLabel(targetRole);
+        partyMap.set(targetRole, companyParty);
+      }
+    } else {
+      // Company is the only party — relabel it as the second role (seller/landlord/etc.)
+      companyParty.role = expectedPair[1];
+      companyParty.label = roleToLabel(expectedPair[1]);
+      partyMap.set(expectedPair[1], companyParty);
+    }
+    partyMap.delete("company");
+  }
+
+  // 2. Merge auxiliary roles (representative, administrator, etc.) into the
+  //    most recent main party that appears before them in the field order.
+  //    In a typical contract, "zastoupená jednatelem X" belongs to the preceding party.
+  for (const auxRole of AUXILIARY_ROLES) {
+    if (!partyMap.has(auxRole)) continue;
+    const auxParty = partyMap.get(auxRole)!;
+
+    // Find the best main party to merge into: prefer the second party in a pair
+    // (representative usually follows seller/company), or fall back to the last main party
+    let mergeTarget: string | null = null;
+    if (expectedPair) {
+      // Prefer role2 (seller/landlord/etc.) since representatives usually follow them
+      if (partyMap.has(expectedPair[1])) mergeTarget = expectedPair[1];
+      else if (partyMap.has(expectedPair[0])) mergeTarget = expectedPair[0];
+    }
+    // Fall back to any non-auxiliary party
+    if (!mergeTarget) {
+      for (const [role] of partyMap.entries()) {
+        if (!AUXILIARY_ROLES.has(role) && role !== auxRole) {
+          mergeTarget = role;
+        }
+      }
+    }
+
+    if (mergeTarget && partyMap.has(mergeTarget)) {
+      const target = partyMap.get(mergeTarget)!;
+      target.fieldNames.push(...auxParty.fieldNames);
+      for (const [k, v] of Object.entries(auxParty.attributes)) {
+        // Store representative name as a distinct attribute
+        const attrKey = k === "name" ? "representativeName" : k;
+        if (v && !target.attributes[attrKey]) target.attributes[attrKey] = v;
+      }
+      partyMap.delete(auxRole);
+    }
+  }
+
+  const parties = Array.from(partyMap.values());
+
+  // ──────────────────────────────────────────────────
   // Detect optional sections
+  // ──────────────────────────────────────────────────
   const optionalSections: string[] = [];
   if (/DPH|daň z přidané hodnoty/i.test(text)) {
     optionalSections.push("DPH / VAT sekce");
@@ -708,12 +910,12 @@ function detectReplacements(text: string): {
     optionalSections.push("Smluvní pokuty");
   }
 
-  return { replacements, entities, notes, optionalSections };
+  return { replacements, entities, parties, contractType, notes, optionalSections };
 }
 
 /** Analyze plain text — replaces values with placeholders, nothing else */
 export function analyzeDocument(text: string): AnalysisResult {
-  const { replacements, entities, notes, optionalSections } = detectReplacements(text);
+  const { replacements, entities, parties, contractType, notes, optionalSections } = detectReplacements(text);
 
   // Apply replacements to a copy of the original text — only swap values, preserve everything else
   let templateText = text;
@@ -734,7 +936,7 @@ export function analyzeDocument(text: string): AnalysisResult {
     notes.push(`Nalezeno ${fields.length} unikátních polí (${totalOccurrences} výskytů) v ${groups.length} skupinách.`);
   }
 
-  return { templateText, fields, groups, entities, optionalSections, notes, originalText: text };
+  return { templateText, fields, groups, entities, parties, contractType, optionalSections, notes, originalText: text };
 }
 
 /**
@@ -745,7 +947,7 @@ export function analyzeDocument(text: string): AnalysisResult {
  */
 export function analyzeDocx(arrayBuffer: ArrayBuffer): AnalysisResult {
   const text = extractTextFromDocx(arrayBuffer);
-  const { replacements, entities, notes, optionalSections } = detectReplacements(text);
+  const { replacements, entities, parties, contractType, notes, optionalSections } = detectReplacements(text);
 
   // Apply replacements to plain text preview
   let templateText = text;
@@ -785,7 +987,7 @@ export function analyzeDocx(arrayBuffer: ArrayBuffer): AnalysisResult {
     notes.push(`Nalezeno ${fields.length} unikátních polí (${totalOccurrences} výskytů) v ${groups.length} skupinách.`);
   }
 
-  return { templateText, fields, groups, entities, optionalSections, notes, originalText: text, templateDocxBase64 };
+  return { templateText, fields, groups, entities, parties, contractType, optionalSections, notes, originalText: text, templateDocxBase64 };
 }
 
 /**
@@ -809,7 +1011,7 @@ export function reprocessTemplate(templateText: string): AnalysisResult {
   });
 
   // Run standard detection on the text with placeholders removed
-  const { replacements, entities, notes, optionalSections } = detectReplacements(safeText);
+  const { replacements, entities, parties, contractType, notes, optionalSections } = detectReplacements(safeText);
 
   // Apply new replacements
   let result = safeText;
@@ -839,6 +1041,8 @@ export function reprocessTemplate(templateText: string): AnalysisResult {
     fields,
     groups,
     entities,
+    parties,
+    contractType,
     optionalSections,
     notes,
     originalText: templateText,

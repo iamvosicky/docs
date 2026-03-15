@@ -170,8 +170,115 @@ describe("document-analyzer", () => {
     });
   });
 
+  describe("contract type detection", () => {
+    it("detects purchase contract type", () => {
+      const input = "KUPNÍ SMLOUVA\nKupující: Jan Novák, bytem č.p. 1, 100 00 Praha";
+      const result = analyzeDocument(input);
+      expect(result.contractType).toBe("purchase");
+    });
+
+    it("detects lease contract type", () => {
+      const input = "NÁJEMNÍ SMLOUVA\nNájemce: Jan Novák, bytem č.p. 1, 100 00 Praha";
+      const result = analyzeDocument(input);
+      expect(result.contractType).toBe("lease");
+    });
+
+    it("detects employment contract type", () => {
+      const input = "PRACOVNÍ SMLOUVA\nZaměstnanec: Jan Novák, bytem č.p. 1, 100 00 Praha";
+      const result = analyzeDocument(input);
+      expect(result.contractType).toBe("employment");
+    });
+
+    it("returns 'other' for unknown contract types", () => {
+      const input = "PROTOKOL\nÚčastník: Jan Novák, bytem č.p. 1, 100 00 Praha";
+      const result = analyzeDocument(input);
+      expect(result.contractType).toBe("other");
+    });
+  });
+
+  describe("contract party detection", () => {
+    it("detects buyer and seller as separate parties in a purchase contract", () => {
+      const input = [
+        "KUPNÍ SMLOUVA",
+        "",
+        "Kupující: Jan Novák, narozen 1. 1. 1990, bytem č.p. 102, 263 01 Obory",
+        '(dále jen \u201Ekupující\u201C)',
+        "",
+        "Prodávající: ABC s.r.o., IČO 12345678, se sídlem č.p. 95, 261 01 Drásov",
+        "zastoupená jednatelem Petrem Svobodou",
+        '(dále jen \u201Eprodávající\u201C)',
+      ].join("\n");
+
+      const result = analyzeDocument(input);
+
+      // Should have exactly 2 parties
+      expect(result.parties.length).toBe(2);
+
+      // Should have buyer and seller roles (no duplicates)
+      const roles = result.parties.map((p) => p.role);
+      expect(roles).toContain("buyer");
+      expect(roles).toContain("seller");
+      expect(new Set(roles).size).toBe(roles.length); // no duplicates
+
+      // Buyer should have name, birth date, address grouped
+      const buyer = result.parties.find((p) => p.role === "buyer")!;
+      expect(buyer.label).toBe("Kupující");
+      expect(buyer.attributes.address).toBeDefined();
+      expect(buyer.fieldNames.length).toBeGreaterThanOrEqual(2);
+
+      // Seller should have company info grouped
+      const seller = result.parties.find((p) => p.role === "seller")!;
+      expect(seller.label).toBe("Prodávající");
+      expect(seller.attributes.address).toBeDefined();
+    });
+
+    it("never creates duplicate buyer roles", () => {
+      const input = [
+        "KUPNÍ SMLOUVA",
+        "",
+        "Kupující: Jan Novák, bytem č.p. 102, 263 01 Obory",
+        "Kupující Jan Novák, bytem č.p. 102, 263 01 Obory",
+      ].join("\n");
+
+      const result = analyzeDocument(input);
+
+      const buyerParties = result.parties.filter((p) => p.role === "buyer");
+      expect(buyerParties.length).toBe(1);
+    });
+
+    it("groups all attributes under the correct party", () => {
+      const input = [
+        "Kupující: Jan Novák, narozen 15.3.1985, bytem Národní 10, 110 00 Praha 1",
+      ].join("\n");
+
+      const result = analyzeDocument(input);
+
+      const buyer = result.parties.find((p) => p.role === "buyer");
+      expect(buyer).toBeDefined();
+      expect(buyer!.attributes.name || buyer!.fieldNames.some(f => f.includes("name"))).toBeTruthy();
+      expect(buyer!.attributes.address || buyer!.fieldNames.some(f => f.includes("address"))).toBeTruthy();
+    });
+
+    it("merges company role into seller for purchase contracts", () => {
+      const input = [
+        "KUPNÍ SMLOUVA",
+        "",
+        "ABC s.r.o., IČO 12345678, se sídlem č.p. 95, 261 01 Drásov",
+      ].join("\n");
+
+      const result = analyzeDocument(input);
+
+      // "company" should be merged into "seller" for purchase contracts
+      const companyParties = result.parties.filter((p) => p.role === "company");
+      expect(companyParties.length).toBe(0);
+
+      const sellerParties = result.parties.filter((p) => p.role === "seller");
+      expect(sellerParties.length).toBe(1);
+    });
+  });
+
   describe("full document analysis", () => {
-    it("handles a complete Czech legal document with buyer and company", () => {
+    it("handles a complete Czech legal document with buyer and seller", () => {
       const input = [
         "KUPNÍ SMLOUVA",
         "",
@@ -201,6 +308,12 @@ describe("document-analyzer", () => {
       // Should have address fields
       const addressFields = result.fields.filter((f) => f.name.includes("address"));
       expect(addressFields.length).toBeGreaterThanOrEqual(2);
+
+      // Contract type should be purchase
+      expect(result.contractType).toBe("purchase");
+
+      // Should have structured parties
+      expect(result.parties.length).toBe(2);
     });
   });
 });
