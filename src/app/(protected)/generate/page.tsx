@@ -279,8 +279,8 @@ function GenerateContent() {
       {step === 2 && (
         <div className="space-y-5">
           {Array.from(groupedFields.entries()).map(([groupName, fields]) => (
-            <div key={groupName} className="rounded-2xl border bg-card overflow-hidden">
-              <div className="px-5 py-3 border-b bg-muted/30">
+            <div key={groupName} className="rounded-2xl border bg-card overflow-visible">
+              <div className="px-5 py-3 border-b bg-muted/30 rounded-t-2xl">
                 <span className="text-sm font-medium">{groupName}</span>
               </div>
               <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -283,8 +283,8 @@ function GenerateContent() {
       {step === 2 && (
         <div className="space-y-5">
           {Array.from(groupedFields.entries()).map(([groupName, { prefix, fields }]) => (
-            <div key={groupName} className="rounded-2xl border bg-card overflow-hidden">
-              <div className="px-5 py-3 border-b bg-muted/30 flex items-center justify-between">
+            <div key={groupName} className="rounded-2xl border bg-card overflow-visible">
+              <div className="px-5 py-3 border-b bg-muted/30 rounded-t-2xl flex items-center justify-between">
                 <span className="text-sm font-medium">{groupName}</span>
                 {prefix && (
                   <EntitySelector

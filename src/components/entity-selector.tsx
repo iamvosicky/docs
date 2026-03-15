@@ -66,7 +66,7 @@ export function EntitySelector({ groupPrefix, fieldKeys, onApply }: EntitySelect
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1.5 z-50 w-72 rounded-xl border bg-popover shadow-lg animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="absolute top-full right-0 mt-1.5 z-50 w-72 rounded-xl border bg-popover shadow-lg animate-in fade-in slide-in-from-top-1 duration-150">
           {/* Search */}
           {entities.length > 3 && (
             <div className="p-2 border-b">
