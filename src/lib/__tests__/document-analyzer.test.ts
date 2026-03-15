@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { analyzeDocument, reprocessTemplate } from "../document-analyzer";
+import { analyzeDocument, reprocessTemplate, numberToCzechCurrency } from "../document-analyzer";
 
 describe("document-analyzer", () => {
   describe("address detection with trigger phrases", () => {
@@ -469,6 +469,100 @@ describe("document-analyzer", () => {
       const nameFields = result.fields.filter((f) => f.name.includes("name") && f.type === "text");
       const notaryDetected = nameFields.some((f) => f.example.includes("Novotný"));
       expect(notaryDetected).toBe(false);
+    });
+  });
+
+  describe("semantic amount classification", () => {
+    it("classifies payment amounts as Úplata", () => {
+      const input = [
+        'Štěpán Černohorský, bytem č.p. 102, 263 01 Obory',
+        '(dále jen \u201EPřevodce\u201C)',
+        "",
+        "Úplata za Podíl činí 21.610.000 Kč",
+      ].join("\n");
+      const result = analyzeDocument(input);
+
+      const payment = result.fields.find((f) => f.type === "currency" && f.example.includes("21.610.000"));
+      expect(payment).toBeDefined();
+      expect(payment!.group).toBe("Úplata");
+    });
+
+    it("classifies share capital amounts as Podíl", () => {
+      const input = [
+        'Štěpán Černohorský, bytem č.p. 102, 263 01 Obory',
+        '(dále jen \u201EPřevodce\u201C)',
+        "",
+        "Výše vkladu do základního kapitálu Společnosti činí 10.000 Kč",
+      ].join("\n");
+      const result = analyzeDocument(input);
+
+      const share = result.fields.find((f) => f.type === "currency" && f.example.includes("10.000"));
+      expect(share).toBeDefined();
+      expect(share!.group).toBe("Podíl");
+    });
+
+    it("separates payment and share amounts into different groups", () => {
+      const input = [
+        'Štěpán Černohorský, bytem č.p. 102, 263 01 Obory',
+        '(dále jen \u201EPřevodce\u201C)',
+        "",
+        "Výše vkladu činí 10.000 Kč",
+        "Úplata za Podíl činí 21.610.000 Kč",
+      ].join("\n");
+      const result = analyzeDocument(input);
+
+      const amounts = result.fields.filter((f) => f.type === "currency");
+      expect(amounts.length).toBe(2);
+
+      const groups = new Set(amounts.map((f) => f.group));
+      expect(groups.has("Úplata")).toBe(true);
+      expect(groups.has("Podíl")).toBe(true);
+    });
+  });
+
+  describe("Czech currency conversion", () => {
+    it("converts 21610000 to Czech words", () => {
+      expect(numberToCzechCurrency(21610000)).toBe(
+        "dvacet jedna milionů šest set deset tisíc korun českých"
+      );
+    });
+
+    it("converts 10000 to Czech words", () => {
+      expect(numberToCzechCurrency(10000)).toBe("deset tisíc korun českých");
+    });
+
+    it("converts 0 to Czech words", () => {
+      expect(numberToCzechCurrency(0)).toBe("nula korun českých");
+    });
+
+    it("attaches written form to currency fields", () => {
+      const input = [
+        'Štěpán Černohorský, bytem č.p. 102, 263 01 Obory',
+        '(dále jen \u201EPřevodce\u201C)',
+        "",
+        "Úplata činí 21.610.000 Kč",
+      ].join("\n");
+      const result = analyzeDocument(input);
+
+      const payment = result.fields.find((f) => f.type === "currency");
+      expect(payment).toBeDefined();
+      expect(payment!.writtenForm).toBeDefined();
+      expect(payment!.writtenForm).toContain("milionů");
+    });
+
+    it("detects written form from document when present", () => {
+      const input = [
+        'Štěpán Černohorský, bytem č.p. 102, 263 01 Obory',
+        '(dále jen \u201EPřevodce\u201C)',
+        "",
+        "Úplata činí 10.000 Kč (slovy: deset tisíc korun českých)",
+      ].join("\n");
+      const result = analyzeDocument(input);
+
+      const payment = result.fields.find((f) => f.type === "currency");
+      expect(payment).toBeDefined();
+      expect(payment!.writtenForm).toBe("deset tisíc korun českých");
+      expect(payment!.writtenFormFromDocument).toBe(true);
     });
   });
 });

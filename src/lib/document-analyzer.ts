@@ -16,6 +16,10 @@ export interface DetectedField {
   occurrences: number;
   /** Entity this field belongs to (e.g. "buyer", "seller") */
   entity?: string;
+  /** For currency fields: Czech written-out form of the amount */
+  writtenForm?: string;
+  /** For currency fields: the written form was found in the document (not auto-generated) */
+  writtenFormFromDocument?: boolean;
 }
 
 export interface EntityGroup {
@@ -74,6 +78,84 @@ export interface AnalysisResult {
   /** Base64-encoded DOCX with {{placeholders}} inserted (preserves original formatting) */
   templateDocxBase64?: string;
 }
+
+// ─── Czech number-to-words converter ───
+
+const CZECH_ONES = ["", "jedna", "dva", "tři", "čtyři", "pět", "šest", "sedm", "osm", "devět"];
+const CZECH_TEENS = ["deset", "jedenáct", "dvanáct", "třináct", "čtrnáct", "patnáct", "šestnáct", "sedmnáct", "osmnáct", "devatenáct"];
+const CZECH_TENS = ["", "deset", "dvacet", "třicet", "čtyřicet", "padesát", "šedesát", "sedmdesát", "osmdesát", "devadesát"];
+const CZECH_HUNDREDS = ["", "sto", "dvě stě", "tři sta", "čtyři sta", "pět set", "šest set", "sedm set", "osm set", "devět set"];
+
+function czechNumberGroup(n: number): string {
+  if (n === 0) return "";
+  if (n < 10) return CZECH_ONES[n];
+  if (n < 20) return CZECH_TEENS[n - 10];
+  if (n < 100) {
+    const t = Math.floor(n / 10);
+    const o = n % 10;
+    return o === 0 ? CZECH_TENS[t] : `${CZECH_TENS[t]} ${CZECH_ONES[o]}`;
+  }
+  const h = Math.floor(n / 100);
+  const rest = n % 100;
+  return rest === 0 ? CZECH_HUNDREDS[h] : `${CZECH_HUNDREDS[h]} ${czechNumberGroup(rest)}`;
+}
+
+/**
+ * Convert a numeric amount to Czech written-out currency form.
+ *
+ * Examples:
+ *   21610000 → "dvacet jedna milionů šest set deset tisíc korun českých"
+ *   10000    → "deset tisíc korun českých"
+ *   1500     → "jeden tisíc pět set korun českých"
+ */
+export function numberToCzechCurrency(amount: number): string {
+  if (amount === 0) return "nula korun českých";
+
+  const parts: string[] = [];
+
+  // Miliardy (billions)
+  const billions = Math.floor(amount / 1_000_000_000);
+  if (billions > 0) {
+    if (billions === 1) parts.push("jedna miliarda");
+    else if (billions >= 2 && billions <= 4) parts.push(`${czechNumberGroup(billions)} miliardy`);
+    else parts.push(`${czechNumberGroup(billions)} miliard`);
+  }
+
+  // Miliony (millions)
+  const millions = Math.floor((amount % 1_000_000_000) / 1_000_000);
+  if (millions > 0) {
+    if (millions === 1) parts.push("jeden milion");
+    else if (millions >= 2 && millions <= 4) parts.push(`${czechNumberGroup(millions)} miliony`);
+    else parts.push(`${czechNumberGroup(millions)} milionů`);
+  }
+
+  // Tisíce (thousands)
+  const thousands = Math.floor((amount % 1_000_000) / 1_000);
+  if (thousands > 0) {
+    if (thousands === 1) parts.push("jeden tisíc");
+    else if (thousands >= 2 && thousands <= 4) parts.push(`${czechNumberGroup(thousands)} tisíce`);
+    else parts.push(`${czechNumberGroup(thousands)} tisíc`);
+  }
+
+  // Stovky a jednotky (hundreds and ones)
+  const remainder = amount % 1_000;
+  if (remainder > 0) {
+    parts.push(czechNumberGroup(remainder));
+  }
+
+  return parts.join(" ") + " korun českých";
+}
+
+/** Parse a Czech-formatted currency string to a number: "21.610.000" → 21610000 */
+function parseCzechAmount(s: string): number {
+  // Remove spaces, replace Czech thousand separators (.) with nothing
+  // Handle ",-" suffix: "21.610.000,-" → "21610000"
+  const cleaned = s.replace(/\s/g, "").replace(/,-$/, "").replace(/\./g, "").replace(/,/g, ".");
+  return Math.round(parseFloat(cleaned) || 0);
+}
+
+/** Pattern to detect written-out amount following a numeric amount */
+const WRITTEN_AMOUNT_PATTERN = /\(\s*(?:slovy|slovem|tj\.?)\s*[:.]?\s*([^)]{5,})\s*\)/gi;
 
 // ─── Czech-aware pattern detection ───
 
@@ -1048,18 +1130,68 @@ function detectReplacements(text: string): {
       const textBefore = text.slice(0, match.index);
       let role = resolveRole(match.index, textBefore);
 
-      // Amounts in the contract body should not be assigned to a party role.
-      // They belong to contract-level sections like Úplata or Podíl.
+      // Amounts: classify by semantic context and detect written-out forms
       if (rule.namePrefix === "amount") {
-        const before100 = text.slice(Math.max(0, match.index - 100), match.index).toLowerCase();
-        // Clear role if preceded by contract-level keywords or in body after role zones
-        if (/(?:kupní\s+cen|cena\s+(?:činí|je|bude)|celkov[áé]\s+(?:cen|částk)|sjednan[áé]\s+cen|dohodnut[áé]\s+cen|úplat|vklad|podíl|činí|splát)/.test(before100)) {
-          role = "";
+        const before150 = text.slice(Math.max(0, match.index - 150), match.index).toLowerCase();
+
+        // Determine semantic category from surrounding text
+        let amountPrefix = "amount";
+        let amountTitle = "Částka";
+        let amountGroup = "Úplata";
+        let amountDesc = "Peněžní částka";
+
+        // Check Úplata/payment keywords FIRST (higher priority than Podíl/vklad)
+        if (/(?:úplat|kupní\s+cen|cena\s+(?:činí|je|bude)|celkov[áé]\s+(?:cen|částk)|sjednan[áé]\s+cen|dohodnut[áé]\s+cen|převod\w*\s+cen|odměn)/.test(before150)) {
+          amountPrefix = "payment";
+          amountTitle = "Úplata";
+          amountGroup = "Úplata";
+          amountDesc = "Úplata za převod / kupní cena";
+        } else if (/(?:vklad\w*|základní\w*\s+kapitál|jmenovit\w*\s+hodnot)/.test(before150)) {
+          amountPrefix = "share_value";
+          amountTitle = "Výše vkladu";
+          amountGroup = "Podíl";
+          amountDesc = "Výše vkladu do základního kapitálu";
+        } else if (/(?:úrok|penále|pokut|sankc)/.test(before150)) {
+          amountPrefix = "interest";
+          amountTitle = "Úrok / sankce";
+          amountGroup = "Úplata";
+          amountDesc = "Úrok nebo sankce";
         }
-        // If explicit roles exist and amount is outside all role zones, clear role
+
+        // Clear party role — amounts belong to contract-level sections
+        role = "";
+        // If explicit roles exist and amount is outside all role zones, definitely clear
         if (roleZones.length > 0 && !findRoleByPosition(roleZones, match.index)) {
           role = "";
         }
+
+        // Check for written-out form after the numeric amount: "(slovy: ...)"
+        const afterAmount = text.slice(match.index + match[0].length, match.index + match[0].length + 200);
+        const writtenMatch = afterAmount.match(/^\s*\(\s*(?:slovy|slovem|tj\.?)\s*[:.]?\s*([^)]{5,})\s*\)/i);
+        let writtenForm: string | undefined;
+        let writtenFormFromDocument = false;
+
+        if (writtenMatch) {
+          writtenForm = writtenMatch[1].trim();
+          writtenFormFromDocument = true;
+        } else {
+          // Auto-generate Czech written form
+          const numericValue = parseCzechAmount(value);
+          if (numericValue > 0) {
+            writtenForm = numberToCzechCurrency(numericValue);
+          }
+        }
+
+        addReplacement(value, role, amountPrefix, rule.type, amountTitle, amountGroup, amountDesc, true);
+
+        // Attach written form to the last added field
+        if (writtenForm && replacements.length > 0) {
+          const lastReplacement = replacements[replacements.length - 1];
+          lastReplacement.field.writtenForm = writtenForm;
+          lastReplacement.field.writtenFormFromDocument = writtenFormFromDocument;
+        }
+
+        continue; // skip the generic addReplacement below
       }
 
       addReplacement(value, role, rule.namePrefix, rule.type, rule.titlePrefix, rule.group, rule.description, true);
