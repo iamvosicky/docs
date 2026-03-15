@@ -110,7 +110,7 @@ const PATTERNS: PatternRule[] = [
     namePrefix: "birth_number",
     type: "rc",
     titlePrefix: "Rodné číslo",
-    group: "Smluvní strana",
+    group: "Ostatní",
     description: "Rodné číslo",
   },
   {
@@ -126,7 +126,7 @@ const PATTERNS: PatternRule[] = [
     namePrefix: "amount",
     type: "currency",
     titlePrefix: "Částka",
-    group: "Finanční údaje",
+    group: "Úplata",
     description: "Peněžní částka",
   },
 ];
@@ -933,7 +933,7 @@ function detectReplacements(text: string): {
       const value = match[1];
       const textBefore = text.slice(0, match.index);
       const role = resolveRole(match.index, textBefore);
-      addReplacement(value, role, "birth_date", "date", "Datum narození", "Smluvní strana", "Datum narození", true);
+      addReplacement(value, role, "birth_date", "date", "Datum narození", "Ostatní", "Datum narození", true);
     }
   }
 
@@ -1017,7 +1017,7 @@ function detectReplacements(text: string): {
       }
 
       const role = resolveRole(match.index, textBefore);
-      addReplacement(value, role, "name", "text", "Jméno a příjmení", "Smluvní strana", "Celé jméno osoby", true);
+      addReplacement(value, role, "name", "text", "Jméno a příjmení", "Ostatní", "Celé jméno osoby", true);
       detectedNames.push(value);
     }
   }
@@ -1066,7 +1066,7 @@ function detectReplacements(text: string): {
       const textBefore = text.slice(0, match.index);
       const role = resolveRole(match.index, textBefore);
       if (isBirthDateContext(text, match.index)) {
-        addReplacement(value, role, "birth_date", "date", "Datum narození", "Smluvní strana", "Datum narození", true);
+        addReplacement(value, role, "birth_date", "date", "Datum narození", "Ostatní", "Datum narození", true);
       } else {
         // Detect semantic context for the date
         const before60 = text.slice(Math.max(0, match.index - 80), match.index).toLowerCase();
