@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/auth/auth-provider';
 import { Button } from '@/components/ui/button';
 import {
-  LayoutDashboard, FileText, FolderOpen, Sparkles,
+  LayoutDashboard, FileText, FolderOpen, Sparkles, Layers,
   Users, Settings, Activity, Plus, ChevronLeft, ChevronRight,
   FileText as LogoIcon
 } from 'lucide-react';
@@ -66,6 +66,7 @@ const mainNav: NavItem[] = [
   { href: '/app', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/app/templates', label: 'Šablony', icon: FileText },
   { href: '/app/documents', label: 'Dokumenty', icon: FolderOpen },
+  { href: '/app/sets', label: 'Sady', icon: Layers },
   { href: '/app/import', label: 'AI Import', icon: Sparkles },
 ];
 

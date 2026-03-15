@@ -18,6 +18,7 @@ import {
   analysisToSchema
 } from '@/lib/document-analyzer';
 import { toast } from 'sonner';
+import { DocumentSetPicker } from '@/components/document-set-picker';
 
 type Step = 'upload' | 'review' | 'done';
 
@@ -33,6 +34,7 @@ export default function UploadPage() {
   const [templateDescription, setTemplateDescription] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [dragOver, setDragOver] = useState(false);
+  const [savedTemplateId, setSavedTemplateId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle file selection
@@ -205,6 +207,7 @@ export default function UploadPage() {
     });
     localStorage.setItem('custom_templates', JSON.stringify(saved));
 
+    setSavedTemplateId(`custom:${id}`);
     setStep('done');
     toast.success('Šablona uložena');
   };
@@ -684,6 +687,14 @@ export default function UploadPage() {
             </div>
           </div>
 
+          {/* Document set picker */}
+          {savedTemplateId && (
+            <DocumentSetPicker
+              templateId={savedTemplateId}
+              onAdd={(_, name) => toast.success(`Přidáno do sady "${name}"`)}
+            />
+          )}
+
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <Button
               variant="outline"
@@ -693,6 +704,7 @@ export default function UploadPage() {
                 setFile(null);
                 setTemplateName('');
                 setTemplateDescription('');
+                setSavedTemplateId(null);
               }}
               className="rounded-xl w-full sm:w-auto"
             >
