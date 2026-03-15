@@ -5,30 +5,42 @@ import { useAuth } from '@/components/auth/auth-provider';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import {
-  FileText, ArrowRight, Upload, Trash2, Building2, User,
-  FolderOpen, Plus, Layers, Star
+  FileText, ArrowRight, Upload, Layers, Plus, Clock
 } from 'lucide-react';
-import { useEntityStore } from '@/lib/entity-store';
-import { type CompanyData } from '@/types/saved-entity';
 import {
-  getAllTemplates, getCustomTemplates, deleteCustomTemplate,
+  getAllTemplates, getCustomTemplates,
   type CustomTemplate
 } from '@/lib/template-schemas';
 import { useDocumentSetStore } from '@/lib/document-set-store';
 import { useStarredStore } from '@/lib/starred-store';
 import { StarButton } from '@/components/star-button';
-import { toast } from 'sonner';
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'právě teď';
+  if (mins < 60) return `před ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `před ${hours} h`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'včera';
+  if (days < 7) return `před ${days} dny`;
+  return new Date(iso).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' });
+}
+
+function docCount(n: number): string {
+  if (n === 0) return 'prázdná';
+  if (n === 1) return '1 dokument';
+  if (n < 5) return `${n} dokumenty`;
+  return `${n} dokumentů`;
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { entities } = useEntityStore();
   const { sets, toggleStar: toggleSetStar } = useDocumentSetStore();
   const { starredIds, toggle: toggleTemplateStar, isStarred: isTemplateStar } = useStarredStore();
   const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>([]);
   const [isClient, setIsClient] = useState(false);
-
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Dobré ráno' : hour < 18 ? 'Dobrý den' : 'Dobrý večer';
 
   const allTemplates = getAllTemplates();
 
@@ -37,302 +49,223 @@ export default function DashboardPage() {
     setCustomTemplates(getCustomTemplates());
   }, []);
 
-  const handleDeleteCustom = (id: string, name: string) => {
-    deleteCustomTemplate(id);
-    setCustomTemplates(getCustomTemplates());
-    toast.success(`Šablona "${name}" smazána`);
-  };
-
-  // Build template list
-  const templates = [
-    ...customTemplates.slice(0, 3).map(ct => ({
-      key: `custom-${ct.id}`,
+  // Recent templates (custom first, then built-in)
+  const recentTemplates = [
+    ...customTemplates.map(ct => ({
       id: `custom:${ct.id}`,
       name: ct.name,
-      desc: `${ct.fields.length} polí · Vlastní`,
+      desc: `${ct.fields.length} polí`,
       href: `/app/generate?template=custom:${ct.id}`,
-      icon: 'upload' as const,
-      customId: ct.id,
-      customName: ct.name,
+      isCustom: true,
+      date: ct.createdAt,
     })),
-    ...allTemplates.slice(0, customTemplates.length > 0 ? 4 : 6).map(t => ({
-      key: `builtin-${t.id}`,
+    ...allTemplates.slice(0, 4).map(t => ({
       id: t.id,
       name: t.name,
       desc: t.description,
       href: `/app/generate?template=${t.id}`,
-      icon: 'file' as const,
-      customId: null as string | null,
-      customName: null as string | null,
+      isCustom: false,
+      date: '',
     })),
-  ];
+  ].slice(0, 6);
 
   // Pinned items
   const starredSets = isClient ? sets.filter(s => s.isStarred) : [];
-  const starredTemplateIds = isClient ? starredIds : [];
-  const starredTemplateItems = starredTemplateIds
+  const starredTemplateItems = isClient ? starredIds
     .map(id => {
       const builtin = allTemplates.find(t => t.id === id);
-      if (builtin) return { id, name: builtin.name, desc: builtin.description, href: `/app/generate?template=${id}` };
+      if (builtin) return { id, name: builtin.name, href: `/app/generate?template=${id}` };
       const custom = customTemplates.find(ct => `custom:${ct.id}` === id);
-      if (custom) return { id, name: custom.name, desc: `${custom.fields.length} polí`, href: `/app/generate?template=${id}` };
+      if (custom) return { id, name: custom.name, href: `/app/generate?template=${id}` };
       return null;
     })
-    .filter(Boolean) as { id: string; name: string; desc: string; href: string }[];
+    .filter(Boolean) as { id: string; name: string; href: string }[] : [];
   const hasPinned = starredSets.length > 0 || starredTemplateItems.length > 0;
 
-  let animDelay = 80;
-  const nextDelay = () => { animDelay += 80; return `${animDelay}ms`; };
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Dobré ráno' : hour < 18 ? 'Dobrý den' : 'Dobrý večer';
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-12">
-      {/* Header */}
-      <div
-        className="pt-2 animate-in fade-in slide-in-from-bottom-2 fill-mode-both"
-        style={{ animationDuration: '350ms', animationDelay: nextDelay() }}
-      >
-        <p className="text-sm font-medium text-muted-foreground/70 mb-0.5">{greeting},</p>
-        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">
-          {user?.name || 'uživateli'}
-        </h1>
-      </div>
-
-      {/* ★ Pinned */}
-      {isClient && hasPinned && (
-        <section
-          className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both"
-          style={{ animationDuration: '350ms', animationDelay: nextDelay() }}
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
-            <h2 className="text-lg font-semibold">Připnuto</h2>
+    <div className="max-w-4xl mx-auto pb-16">
+      {/* ─── Header ─── */}
+      <div className="pt-4 pb-10">
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-[13px] text-muted-foreground/60 mb-1">{greeting}</p>
+            <h1 className="text-[28px] sm:text-[34px] font-semibold tracking-tight leading-tight">
+              {user?.name || 'Dokumenty'}
+            </h1>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            {starredSets.map(docSet => (
-              <Link
-                key={`pin-set-${docSet.id}`}
-                href={`/app/sets/${docSet.id}`}
-                className="group relative rounded-2xl border bg-card p-4 transition-all hover:border-primary/20 hover:shadow-sm"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-xl bg-secondary flex items-center justify-center">
-                      <Layers className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{docSet.name}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {docSet.templateIds.length} {docSet.templateIds.length === 1 ? 'dokument' : docSet.templateIds.length < 5 ? 'dokumenty' : 'dokumentů'}
-                      </p>
-                    </div>
-                  </div>
-                  <StarButton starred onToggle={() => toggleSetStar(docSet.id)} />
-                </div>
-                {docSet.templateIds.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {docSet.templateIds.slice(0, 3).map(tid => {
-                      const t = allTemplates.find(x => x.id === tid) || customTemplates.find(x => `custom:${x.id}` === tid);
-                      return (
-                        <span key={tid} className="text-[10px] px-1.5 py-0.5 rounded bg-secondary/60 text-muted-foreground truncate max-w-[120px]">
-                          {t ? ('name' in t ? t.name : '') : tid}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
-              </Link>
-            ))}
-            {starredTemplateItems.map(item => (
-              <Link
-                key={`pin-tpl-${item.id}`}
-                href={item.href}
-                className="group relative rounded-2xl border bg-card p-4 transition-all hover:border-primary/20 hover:shadow-sm"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-xl bg-secondary flex items-center justify-center">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{item.name}</p>
-                      <p className="text-[11px] text-muted-foreground">{item.desc}</p>
-                    </div>
-                  </div>
-                  <StarButton starred onToggle={() => toggleTemplateStar(item.id)} />
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Document Sets */}
-      {isClient && (
-        <section
-          className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both"
-          style={{ animationDuration: '350ms', animationDelay: nextDelay() }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Sady dokumentů</h2>
-            <Link href="/app/sets" className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1">
-              {sets.length > 0 ? 'Zobrazit vše' : 'Vytvořit'}
-              <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-
-          {sets.length === 0 ? (
-            <div className="rounded-2xl border border-dashed bg-card/50 p-6 text-center">
-              <FolderOpen className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground mb-1">Žádné sady</p>
-              <p className="text-xs text-muted-foreground mb-3">
-                Seskupte dokumenty a sdílejte data mezi nimi
-              </p>
-              <Link href="/app/sets">
-                <Button variant="outline" size="sm" className="rounded-xl gap-1 text-xs">
-                  <Plus className="h-3 w-3" />
-                  Vytvořit sadu
-                </Button>
-              </Link>
-            </div>
-          ) : (
-            <div className="rounded-2xl border bg-card overflow-visible">
-              {sets.slice(0, 5).map((docSet, i) => (
-                <div key={docSet.id} className={`flex items-center gap-3.5 px-4 py-3.5 group transition-colors hover:bg-accent/40 ${i > 0 ? 'border-t' : ''}`}>
-                  <div className="h-9 w-9 rounded-xl bg-secondary flex items-center justify-center shrink-0">
-                    <Layers className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <Link href={`/app/sets/${docSet.id}`} className="text-sm font-medium hover:text-primary transition-colors">
-                      {docSet.name}
-                    </Link>
-                    <p className="text-xs text-muted-foreground">
-                      {docSet.templateIds.length === 0
-                        ? 'Prázdná sada'
-                        : `${docSet.templateIds.length} ${docSet.templateIds.length === 1 ? 'dokument' : docSet.templateIds.length < 5 ? 'dokumenty' : 'dokumentů'}`}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <StarButton
-                      starred={!!docSet.isStarred}
-                      onToggle={() => toggleSetStar(docSet.id)}
-                    />
-                    {docSet.templateIds.length > 0 && (
-                      <Button variant="ghost" size="sm" asChild className="rounded-xl h-7 px-2.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Link href={`/app/generate?template=${docSet.templateIds.join(',')}`}>Generovat</Link>
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {sets.length > 5 && (
-                <div className="border-t px-4 py-2.5 text-center">
-                  <Link href="/app/sets" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                    +{sets.length - 5} dalších sad
-                  </Link>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Saved Entities */}
-      {entities.length > 0 && (
-        <section
-          className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both"
-          style={{ animationDuration: '350ms', animationDelay: nextDelay() }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Subjekty</h2>
-            <Link href="/app/settings/entities" className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1">
-              Spravovat
-              <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {entities.slice(0, 5).map(entity => (
-              <div
-                key={entity.id}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-card text-sm"
-              >
-                {entity.type === 'company' ? (
-                  <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                ) : (
-                  <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                )}
-                <span className="font-medium text-[13px]">{entity.label}</span>
-                {entity.type === 'company' && (entity.data as CompanyData).ico && (
-                  <span className="text-[11px] text-muted-foreground">IČ: {(entity.data as CompanyData).ico}</span>
-                )}
-                {entity.isDefault && (
-                  <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">Výchozí</span>
-                )}
-              </div>
-            ))}
-            {entities.length > 5 && (
-              <Link
-                href="/app/settings/entities"
-                className="inline-flex items-center px-3 py-2 rounded-xl border border-dashed text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
-              >
-                +{entities.length - 5} dalších
-              </Link>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Templates */}
-      <section
-        className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both"
-        style={{ animationDuration: '350ms', animationDelay: nextDelay() }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Šablony</h2>
-          <Link href="/app/templates" className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1">
-            Zobrazit vše
-            <ArrowRight className="h-3 w-3" />
+          <Link href="/upload">
+            <Button
+              size="sm"
+              className="rounded-full h-9 px-4 gap-1.5 text-[13px] font-medium shadow-sm"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              Nahrát
+            </Button>
           </Link>
         </div>
+      </div>
 
-        <div className="rounded-2xl border bg-card overflow-visible">
-          {templates.map((t, i) => (
-            <div key={t.key} className={`flex items-center gap-3.5 px-4 py-3.5 group transition-colors hover:bg-accent/40 ${i > 0 ? 'border-t' : ''}`}>
-              <div className="h-9 w-9 rounded-xl bg-secondary flex items-center justify-center shrink-0">
-                {t.icon === 'upload' ? (
-                  <Upload className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium truncate">{t.name}</p>
-                <p className="text-xs text-muted-foreground">{t.desc}</p>
-              </div>
-              <div className="flex items-center gap-1">
-                {isClient && (
-                  <StarButton
-                    starred={isTemplateStar(t.id)}
-                    onToggle={() => toggleTemplateStar(t.id)}
-                  />
-                )}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="sm" asChild className="rounded-xl h-7 px-2.5 text-xs">
-                    <Link href={t.href}>Použít</Link>
-                  </Button>
-                  {t.customId && (
-                    <button
-                      onClick={() => handleDeleteCustom(t.customId!, t.customName!)}
-                      className="h-7 w-7 rounded-xl flex items-center justify-center text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  )}
-                </div>
-              </div>
+      <div className="space-y-12">
+        {/* ─── Pinned ─── */}
+        {isClient && hasPinned && (
+          <section>
+            <p className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-widest mb-4">
+              Připnuto
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {starredSets.map(docSet => (
+                <Link
+                  key={docSet.id}
+                  href={`/app/sets/${docSet.id}`}
+                  className="group relative rounded-2xl bg-card p-5 transition-all duration-200 hover:shadow-md hover:shadow-black/[0.04] dark:hover:shadow-white/[0.02] hover:-translate-y-0.5"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="h-10 w-10 rounded-[14px] bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center">
+                      <Layers className="h-5 w-5 text-violet-500/70" />
+                    </div>
+                    <StarButton starred onToggle={() => toggleSetStar(docSet.id)} />
+                  </div>
+                  <h3 className="text-[15px] font-semibold mb-0.5 leading-snug">{docSet.name}</h3>
+                  <p className="text-[12px] text-muted-foreground/60">{docCount(docSet.templateIds.length)}</p>
+                </Link>
+              ))}
+              {starredTemplateItems.map(item => (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className="group relative rounded-2xl bg-card p-5 transition-all duration-200 hover:shadow-md hover:shadow-black/[0.04] dark:hover:shadow-white/[0.02] hover:-translate-y-0.5"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="h-10 w-10 rounded-[14px] bg-gradient-to-br from-blue-500/10 to-cyan-500/10 flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-blue-500/70" />
+                    </div>
+                    <StarButton starred onToggle={() => toggleTemplateStar(item.id)} />
+                  </div>
+                  <h3 className="text-[15px] font-semibold mb-0.5 leading-snug">{item.name}</h3>
+                  <p className="text-[12px] text-muted-foreground/60">Šablona</p>
+                </Link>
+              ))}
             </div>
-          ))}
-        </div>
-      </section>
+          </section>
+        )}
+
+        {/* ─── Document Sets ─── */}
+        {isClient && (
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-widest">
+                Sady dokumentů
+              </p>
+              <Link
+                href="/app/sets"
+                className="text-[12px] text-muted-foreground/60 hover:text-foreground transition-colors"
+              >
+                {sets.length > 0 ? 'Zobrazit vše' : 'Vytvořit sadu'}
+              </Link>
+            </div>
+
+            {sets.length === 0 ? (
+              <div className="rounded-2xl bg-card p-8 sm:p-10 text-center">
+                <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center mb-4">
+                  <Layers className="h-7 w-7 text-violet-500/50" />
+                </div>
+                <h3 className="text-[15px] font-semibold mb-1.5">Vytvořte první sadu</h3>
+                <p className="text-[13px] text-muted-foreground/60 max-w-sm mx-auto mb-5 leading-relaxed">
+                  Seskupte související dokumenty a vyplňte sdílená data jednou pro všechny.
+                </p>
+                <Link href="/app/sets">
+                  <Button variant="outline" size="sm" className="rounded-full h-8 px-4 text-[12px] gap-1.5 font-medium">
+                    <Plus className="h-3 w-3" />
+                    Nová sada
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {sets.slice(0, 6).map(docSet => (
+                  <Link
+                    key={docSet.id}
+                    href={`/app/sets/${docSet.id}`}
+                    className="group rounded-2xl bg-card p-5 transition-all duration-200 hover:shadow-md hover:shadow-black/[0.04] dark:hover:shadow-white/[0.02] hover:-translate-y-0.5"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="h-10 w-10 rounded-[14px] bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center">
+                        <Layers className="h-5 w-5 text-violet-500/70" />
+                      </div>
+                      <StarButton
+                        starred={!!docSet.isStarred}
+                        onToggle={() => toggleSetStar(docSet.id)}
+                      />
+                    </div>
+                    <h3 className="text-[15px] font-semibold mb-0.5 leading-snug">{docSet.name}</h3>
+                    <div className="flex items-center gap-3 text-[12px] text-muted-foreground/60">
+                      <span>{docCount(docSet.templateIds.length)}</span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {timeAgo(docSet.updatedAt)}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+
+                {/* Create new set card */}
+                <Link
+                  href="/app/sets"
+                  className="rounded-2xl border border-dashed border-muted-foreground/10 p-5 flex flex-col items-center justify-center text-center transition-all duration-200 hover:border-muted-foreground/20 hover:bg-card/50 min-h-[120px]"
+                >
+                  <Plus className="h-5 w-5 text-muted-foreground/30 mb-2" />
+                  <span className="text-[13px] text-muted-foreground/50 font-medium">Nová sada</span>
+                </Link>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ─── Recent Documents ─── */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-widest">
+              Šablony
+            </p>
+            <Link
+              href="/app/templates"
+              className="text-[12px] text-muted-foreground/60 hover:text-foreground transition-colors"
+            >
+              Zobrazit vše
+            </Link>
+          </div>
+
+          <div className="rounded-2xl bg-card divide-y divide-border/50">
+            {recentTemplates.map((t) => (
+              <Link
+                key={t.id}
+                href={t.href}
+                className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-accent/30 first:rounded-t-2xl last:rounded-b-2xl group"
+              >
+                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 flex items-center justify-center shrink-0">
+                  <FileText className="h-4 w-4 text-blue-500/60" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] font-medium truncate">{t.name}</p>
+                  <p className="text-[12px] text-muted-foreground/50 truncate">{t.desc}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {isClient && (
+                    <StarButton
+                      starred={isTemplateStar(t.id)}
+                      onToggle={() => toggleTemplateStar(t.id)}
+                    />
+                  )}
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-colors" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
