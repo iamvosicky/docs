@@ -7,8 +7,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/auth-provider";
 import {
-  ChevronDown, FileText, ArrowRight,
-  FolderOpen, Plus, Upload,
+  ChevronDown, FileText, ArrowRight, CheckCircle2,
+  FolderOpen, Plus, Upload, Zap, Shield, Download,
   BookOpen, Trash2, Calendar
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -18,27 +18,171 @@ import { toast } from "sonner";
 
 // ─── Landing page for unauthenticated users ───
 function LandingPage() {
+  const allTemplates = getAllTemplates();
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen landing-dark bg-[#0a0a0f] text-white">
       {/* ── Hero ── */}
-      <section className="hero-gradient relative">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-36 pb-10 sm:pb-16">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-5 sm:mb-6">
-              Právní dokumenty
+      <section className="relative overflow-hidden">
+        {/* Glow effects */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[radial-gradient(ellipse_at_center,oklch(0.45_0.18_265/0.15),transparent_70%)] pointer-events-none" />
+        <div className="absolute top-20 right-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,oklch(0.5_0.2_150/0.08),transparent_70%)] pointer-events-none" />
+
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-32 pb-8 sm:pb-12 relative">
+          {/* Nav hint */}
+          <div className="flex justify-center mb-10 sm:mb-14">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-sm text-white/60">
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Právní dokumenty nové generace
+            </div>
+          </div>
+
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-4xl sm:text-6xl lg:text-[5.5rem] font-bold tracking-tight mb-6 sm:mb-8 leading-[1.05]">
+              Připravte si právní
               <br />
-              <span className="bg-gradient-to-r from-primary to-[oklch(0.6_0.2_310)] bg-clip-text text-transparent">
-                bez komplikací
+              dokumenty{" "}
+              <span className="italic font-serif bg-gradient-to-r from-emerald-300 to-emerald-500 bg-clip-text text-transparent">
+                snadno
               </span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed mb-10">
-              Vyplňte údaje jednou. Systém připraví vše ostatní.
+            <p className="text-lg sm:text-xl text-white/50 max-w-lg mx-auto leading-relaxed mb-10 sm:mb-12">
+              Vyplňte údaje jednou — systém připraví vše ostatní.
             </p>
 
-            <Button asChild size="lg" className="rounded-xl px-10 h-13 text-base">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Button asChild size="lg" className="rounded-full px-8 h-12 text-base bg-white text-black hover:bg-white/90 font-medium">
+                <Link href="/login">
+                  Začít zdarma
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" size="lg" className="rounded-full px-8 h-12 text-base text-white/60 hover:text-white hover:bg-white/5">
+                <a href="#use-cases">
+                  Jak to funguje
+                </a>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Dashboard mockup ── */}
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-16 pb-4">
+          <div className="max-w-4xl mx-auto relative">
+            <div className="absolute -inset-8 bg-[radial-gradient(ellipse_at_center,oklch(0.45_0.18_265/0.12),transparent_60%)] pointer-events-none" />
+            <div className="relative rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-5 sm:p-8">
+              {/* Top bar */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                    <FileText className="h-4 w-4 text-emerald-400" />
+                  </div>
+                  <span className="text-sm font-medium text-white/80">Založení s.r.o.</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-emerald-400" />
+                  <span className="text-xs text-white/40">Připraveno</span>
+                </div>
+              </div>
+
+              {/* Stats row */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                {[
+                  { label: "Dokumentů", value: "10", sub: "v sadě" },
+                  { label: "Polí", value: "24", sub: "sdílených" },
+                  { label: "Čas", value: "<5", sub: "minut" },
+                ].map((s) => (
+                  <div key={s.label} className="rounded-xl border border-white/8 bg-white/[0.02] p-3 sm:p-4">
+                    <p className="text-[10px] sm:text-xs text-white/30 uppercase tracking-wider mb-1">{s.label}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-white/90">{s.value}</p>
+                    <p className="text-[10px] text-white/20">{s.sub}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Document list */}
+              <div className="space-y-2">
+                {[
+                  { name: "Stanovy společnosti", status: true },
+                  { name: "Rozhodnutí o umístění sídla", status: true },
+                  { name: "Plná moc — založení", status: true },
+                  { name: "Čestné prohlášení jednatele", status: false },
+                ].map((doc) => (
+                  <div key={doc.name} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/[0.02] px-4 py-2.5">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-3.5 w-3.5 text-white/20" />
+                      <span className="text-sm text-white/60">{doc.name}</span>
+                    </div>
+                    {doc.status ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    ) : (
+                      <div className="h-4 w-4 rounded-full border-2 border-white/10" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Features row ── */}
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+            {[
+              {
+                icon: Zap,
+                title: "Rychlé generování",
+                desc: "Kompletní sada dokumentů za pár minut.",
+              },
+              {
+                icon: Shield,
+                title: "České právo",
+                desc: "Šablony v souladu s aktuální legislativou.",
+              },
+              {
+                icon: Download,
+                title: "DOCX, PDF, ZIP",
+                desc: "Stáhněte jednotlivě nebo vše najednou.",
+              },
+            ].map((f) => (
+              <div key={f.title} className="rounded-2xl border border-white/8 bg-white/[0.02] p-6 group hover:border-white/15 transition-colors">
+                <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-4 group-hover:bg-emerald-500/20 transition-colors">
+                  <f.icon className="h-5 w-5 text-emerald-400" />
+                </div>
+                <h3 className="font-semibold text-white/90 mb-1">{f.title}</h3>
+                <p className="text-sm text-white/40 leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Use cases ── */}
+      <section id="use-cases" className="container mx-auto px-4 sm:px-6 lg:px-8 pb-20 sm:pb-32">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-4">
+              Vyberete situaci,{" "}
+              <span className="italic font-serif bg-gradient-to-r from-emerald-300 to-emerald-500 bg-clip-text text-transparent">
+                my připravíme dokumenty
+              </span>
+            </h2>
+            <p className="text-white/40 text-base sm:text-lg max-w-lg mx-auto">
+              {useCases.length} připravených sad pro nejčastější právní situace.
+            </p>
+          </div>
+
+          <div className="landing-cards">
+            <HomeQuickButtons />
+          </div>
+
+          <div className="text-center mt-14">
+            <Button asChild size="lg" className="rounded-full px-8 h-12 text-base bg-white text-black hover:bg-white/90 font-medium">
               <Link href="/login">
-                Začít zdarma
+                Přihlásit se a začít
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Link>
             </Button>
@@ -46,41 +190,15 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* ── Use cases ── */}
-      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-center mb-4">
-            Vyberete situaci, my připravíme dokumenty
-          </h2>
-          <p className="text-muted-foreground text-center text-base sm:text-lg max-w-xl mx-auto mb-14 sm:mb-20">
-            Kompletní sady v souladu s českým právem.
-          </p>
-
-          <HomeQuickButtons />
-        </div>
-      </section>
-
-      {/* ── CTA ── */}
-      <section className="container mx-auto px-4 sm:px-6 lg:px-8 pb-24 sm:pb-36">
-        <div className="text-center">
-          <Button asChild size="lg" className="rounded-xl px-10 h-13 text-base">
-            <Link href="/login">
-              Přihlásit se a začít
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Link>
-          </Button>
-        </div>
-      </section>
-
       {/* ── Footer ── */}
-      <footer className="border-t">
+      <footer className="border-t border-white/8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/30">
             <div className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-primary to-[oklch(0.6_0.2_310)] flex items-center justify-center">
+              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
                 <FileText className="h-3 w-3 text-white" />
               </div>
-              <span className="font-medium text-foreground">DocGen</span>
+              <span className="font-medium text-white/70">DocGen</span>
             </div>
             <p>&copy; 2026 DocGen</p>
           </div>
