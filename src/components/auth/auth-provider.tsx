@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!res.ok) {
         setIsLoading(false);
-        return { success: false, error: data.error || 'Prihlaseni se nezdarilo' };
+        return { success: false, error: data.error || 'Přihlášení se nezdařilo' };
       }
 
       setUser(data.user);
@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { success: true };
     } catch {
       setIsLoading(false);
-      return { success: false, error: 'Chyba pripojeni k serveru' };
+      return { success: false, error: 'Chyba připojení k serveru' };
     }
   };
 

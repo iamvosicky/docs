@@ -55,9 +55,9 @@ export default function LoginPage() {
           <div className="inline-flex h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-[oklch(0.6_0.2_310)] items-center justify-center mb-4">
             <FileText className="h-6 w-6 text-white" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Vitejte zpet</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Vítejte zpět</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Prihlaste se pro pristup k dokumentum
+            Přihlaste se pro přístup k dokumentům
           </p>
         </div>
 
@@ -148,11 +148,11 @@ export default function LoginPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Prihlasovani...
+                  Přihlašování...
                 </>
               ) : (
                 <>
-                  Prihlasit se
+                  Přihlásit se
                   <ArrowRight className="h-4 w-4 ml-1" />
                 </>
               )}
@@ -168,13 +168,13 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-xs text-muted-foreground mt-6">
-          Prihlasenim souhlasit s{' '}
+          Přihlášením souhlasíte s{' '}
           <Link href="#" className="underline underline-offset-4 hover:text-foreground transition-colors">
-            podminkami pouziti
+            podmínkami použití
           </Link>{' '}
           a{' '}
           <Link href="#" className="underline underline-offset-4 hover:text-foreground transition-colors">
-            ochranou udaju
+            ochranou údajů
           </Link>
           .
         </p>

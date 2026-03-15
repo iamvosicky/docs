@@ -48,26 +48,26 @@ function LandingPage() {
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 sm:mb-8 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-medium border border-primary/20 animate-in fade-in slide-in-from-bottom-2 duration-500">
               <Sparkles className="h-3.5 w-3.5" />
-              Generujte pravni dokumenty za minuty
+              Generujte právní dokumenty za minuty
             </div>
 
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-5 sm:mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              Pravni dokumenty
+              Právní dokumenty
               <br />
               <span className="bg-gradient-to-r from-primary via-[oklch(0.55_0.2_290)] to-[oklch(0.6_0.2_310)] bg-clip-text text-transparent">
-                bez komplikaci
+                bez komplikací
               </span>
             </h1>
 
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-10 sm:mb-12 px-2 sm:px-0 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
-              Kompletni sady pravnich dokumentu v souladu s ceskym pravem.
-              Vyplnte udaje jednou — system je doplni vsude.
+              Kompletní sady právních dokumentů v souladu s českým právem.
+              Vyplňte údaje jednou — systém je doplní všude.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
               <Button asChild size="lg" className="rounded-xl px-10 h-13 text-base w-full sm:w-auto cta-pulse shadow-lg shadow-primary/20">
                 <Link href="/login">
-                  Zacit zdarma
+                  Začít zdarma
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Link>
               </Button>
@@ -106,9 +106,9 @@ function LandingPage() {
                       <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
                         <FileText className="h-4 w-4 text-primary" />
                       </div>
-                      <span className="text-sm font-medium">Zalozeni firmy</span>
+                      <span className="text-sm font-medium">Založení firmy</span>
                     </div>
-                    {["Nazev spolecnosti", "ICO", "Sidlo", "Jednatel"].map((label) => (
+                    {["Název společnosti", "IČO", "Sídlo", "Jednatel"].map((label) => (
                       <div key={label} className="space-y-1">
                         <div className="text-[10px] text-muted-foreground/70 font-medium">{label}</div>
                         <div className="h-8 rounded-lg bg-muted/50 border border-border/30" />
@@ -119,13 +119,13 @@ function LandingPage() {
                   {/* Right: generated docs */}
                   <div className="space-y-2">
                     <div className="text-[10px] text-muted-foreground/70 font-medium uppercase tracking-wider mb-3">
-                      Generovane dokumenty
+                      Generované dokumenty
                     </div>
                     {[
-                      "Stanovy spolecnosti",
-                      "Rozhodnuti o umisteni",
-                      "Plna moc — zalozeni",
-                      "Cestne prohlaseni",
+                      "Stanovy společnosti",
+                      "Rozhodnutí o umístění",
+                      "Plná moc — založení",
+                      "Čestné prohlášení",
                     ].map((doc, i) => (
                       <div key={doc} className="flex items-center gap-2 rounded-lg bg-muted/30 border border-border/20 px-3 py-2">
                         <div className={`h-6 w-6 rounded-md flex items-center justify-center text-white text-[9px] font-bold ${
@@ -140,7 +140,7 @@ function LandingPage() {
                     <div className="pt-2">
                       <div className="h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center gap-2">
                         <Download className="h-3.5 w-3.5 text-primary" />
-                        <span className="text-xs font-medium text-primary">Stahnout vse (ZIP)</span>
+                        <span className="text-xs font-medium text-primary">Stáhnout vše (ZIP)</span>
                       </div>
                     </div>
                   </div>
@@ -156,10 +156,10 @@ function LandingPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 max-w-4xl mx-auto">
             {[
-              { value: `${allTemplates.length}`, label: "Sablon dokumentu", icon: FileText },
-              { value: `${useCases.length}`, label: "Pripravenych sad", icon: Layers },
-              { value: "100%", label: "Ceske pravo", icon: Scale },
-              { value: "<5 min", label: "Doba generovani", icon: Clock },
+              { value: `${allTemplates.length}`, label: "Šablon dokumentů", icon: FileText },
+              { value: `${useCases.length}`, label: "Připravených sad", icon: Layers },
+              { value: "100%", label: "České právo", icon: Scale },
+              { value: "<5 min", label: "Doba generování", icon: Clock },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="inline-flex h-10 w-10 rounded-xl bg-primary/10 items-center justify-center mx-auto mb-2">
@@ -181,10 +181,10 @@ function LandingPage() {
               Jak to funguje
             </div>
             <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-4">
-              Tri kroky ke kompletnim dokumentum
+              Tři kroky ke kompletním dokumentům
             </h2>
             <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
-              Zadne slozite formulare. Vyberete, vyplnite, stahnete.
+              Žádné složité formuláře. Vyberete, vyplníte, stáhnete.
             </p>
           </div>
 
@@ -193,22 +193,22 @@ function LandingPage() {
               {
                 step: "1",
                 icon: FolderOpen,
-                title: "Vyberete, co potrebujete",
-                desc: "Zvolte zivotni situaci — zalozeni firmy, zamestnani, obchodni smlouvy — a system pripravi celou sadu dokumentu.",
+                title: "Vyberete, co potřebujete",
+                desc: "Zvolte životní situaci — založení firmy, zaměstnání, obchodní smlouvy — a systém připraví celou sadu dokumentů.",
                 color: "bg-primary",
               },
               {
                 step: "2",
                 icon: FileText,
-                title: "Vyplnite udaje jednou",
-                desc: "Sdilena pole se automaticky vyplni napric vsemi dokumenty. Chytre validace hlidaji formaty ICO, dat i castek.",
+                title: "Vyplníte údaje jednou",
+                desc: "Sdílená pole se automaticky vyplní napříč všemi dokumenty. Chytré validace hlídají formáty IČO, dat i částek.",
                 color: "bg-[oklch(0.55_0.2_290)]",
               },
               {
                 step: "3",
                 icon: Download,
-                title: "Stahnete hotove dokumenty",
-                desc: "Stahnete dokumenty ve formatu DOCX nebo PDF. Jednotlive, nebo vse najednou jako ZIP.",
+                title: "Stáhnete hotové dokumenty",
+                desc: "Stáhnete dokumenty ve formátu DOCX nebo PDF. Jednotlivě, nebo vše najednou jako ZIP.",
                 color: "bg-[oklch(0.6_0.15_170)]",
               },
             ].map((item) => (
@@ -233,10 +233,10 @@ function LandingPage() {
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-14">
               <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-4">
-                Proc DocGen?
+                Proč DocGen?
               </h2>
               <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
-                Navrzeno pro ceske pravni prostredi od zacatku.
+                Navrženo pro české právní prostředí od začátku.
               </p>
             </div>
 
@@ -244,33 +244,33 @@ function LandingPage() {
               {[
                 {
                   icon: Scale,
-                  title: "Ceske pravo",
-                  desc: "Vsechny sablony jsou v souladu s aktualni ceskou legislativou.",
+                  title: "České právo",
+                  desc: "Všechny šablony jsou v souladu s aktuální českou legislativou.",
                 },
                 {
                   icon: Zap,
-                  title: "Rychle generovani",
-                  desc: "Kompletni sada dokumentu behem par minut, ne hodin.",
+                  title: "Rychlé generování",
+                  desc: "Kompletní sada dokumentů během pár minut, ne hodin.",
                 },
                 {
                   icon: Layers,
-                  title: "Sdilena pole",
-                  desc: "Vyplnte udaje jednou a propisi se do vsech dokumentu sady.",
+                  title: "Sdílená pole",
+                  desc: "Vyplňte údaje jednou a propíší se do všech dokumentů sady.",
                 },
                 {
                   icon: Shield,
-                  title: "Bezpecne a sifrovane",
-                  desc: "Vase data jsou chranena sifrovani a nikdy je nesdilime.",
+                  title: "Bezpečné a šifrované",
+                  desc: "Vaše data jsou chráněna šifrováním a nikdy je nesdílíme.",
                 },
                 {
                   icon: Download,
                   title: "DOCX i PDF",
-                  desc: "Stahnete dokumenty v preferovanem formatu, vcetne ZIP archivu.",
+                  desc: "Stáhněte dokumenty v preferovaném formátu, včetně ZIP archivu.",
                 },
                 {
                   icon: Users,
-                  title: "Tymova spoluprace",
-                  desc: "Pozvete kolegy a sdílejte sablony napric firmou.",
+                  title: "Týmová spolupráce",
+                  desc: "Pozvěte kolegy a sdílejte šablony napříč firmou.",
                 },
               ].map((feature) => (
                 <div key={feature.title} className="rounded-2xl border bg-card p-5 sm:p-6 hover-lift group">
@@ -291,13 +291,13 @@ function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1 mb-4 rounded-full bg-primary/8 text-primary text-xs font-medium border border-primary/15">
-              Pripravene sady
+              Připravené sady
             </div>
             <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-4">
-              Vyberete situaci, my pripravime dokumenty
+              Vyberete situaci, my připravíme dokumenty
             </h2>
             <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
-              {useCases.length} pripravenych sad pro nejcastejsi pravni situace.
+              {useCases.length} připravených sad pro nejčastější právní situace.
             </p>
           </div>
 
@@ -306,7 +306,7 @@ function LandingPage() {
           <div className="text-center mt-12">
             <Button asChild size="lg" className="rounded-xl px-10 h-13 text-base shadow-lg shadow-primary/20">
               <Link href="/login">
-                Prihlasit se a zacit
+                Přihlásit se a začít
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Link>
             </Button>
@@ -320,26 +320,26 @@ function LandingPage() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-                Duvera v kazdem dokumentu
+                Důvěra v každém dokumentu
               </h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 {
-                  quote: "Zalozeni s.r.o. nam zabralo 5 minut misto 2 dnu. Vsechny dokumenty byly pripraveny na prvni pokus.",
+                  quote: "Založení s.r.o. nám zabralo 5 minut místo 2 dnů. Všechny dokumenty byly připraveny na první pokus.",
                   author: "Martin K.",
                   role: "Zakladatel startupu",
                 },
                 {
-                  quote: "Konecne nastroj, ktery rozumi ceskemu pravu. Sablony jsou aktualni a presne.",
+                  quote: "Konečně nástroj, který rozumí českému právu. Šablony jsou aktuální a přesné.",
                   author: "Jana V.",
-                  role: "Pravni asistentka",
+                  role: "Právní asistentka",
                 },
                 {
-                  quote: "Pouzivame DocGen pro vsechny firemni smlouvy. Usetri nam hodiny prace kazdy tyden.",
+                  quote: "Používáme DocGen pro všechny firemní smlouvy. Ušetří nám hodiny práce každý týden.",
                   author: "Petr S.",
-                  role: "Jednatel spolecnosti",
+                  role: "Jednatel společnosti",
                 },
               ].map((testimonial) => (
                 <div key={testimonial.author} className="rounded-2xl border bg-card p-6 flex flex-col">
@@ -364,16 +364,16 @@ function LandingPage() {
             <Sparkles className="h-8 w-8 text-white" />
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-            Pripraveni zacit?
+            Připraveni začít?
           </h2>
           <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg mx-auto">
-            Registrace je zdarma. Zadna kreditni karta, zadne zavazky.
-            Zacnete generovat dokumenty hned.
+            Registrace je zdarma. Žádná kreditní karta, žádné závazky.
+            Začněte generovat dokumenty hned.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button asChild size="lg" className="rounded-xl px-10 h-13 text-base w-full sm:w-auto cta-pulse shadow-lg shadow-primary/20">
               <Link href="/login">
-                Vytvorit ucet zdarma
+                Vytvořit účet zdarma
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Link>
             </Button>
@@ -381,15 +381,15 @@ function LandingPage() {
           <div className="flex items-center justify-center gap-6 mt-8 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-              Zdarma na zacatek
+              Zdarma na začátek
             </div>
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-              Bez kreditni karty
+              Bez kreditní karty
             </div>
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-              Ceske pravo
+              České právo
             </div>
           </div>
         </div>
@@ -405,7 +405,7 @@ function LandingPage() {
               </div>
               <span className="font-medium text-foreground">DocGen</span>
             </div>
-            <p>&copy; 2026 DocGen. Vsechna prava vyhrazena.</p>
+            <p>&copy; 2026 DocGen. Všechna práva vyhrazena.</p>
           </div>
         </div>
       </footer>
@@ -420,7 +420,7 @@ function Dashboard() {
   const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>([]);
 
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Dobre rano" : hour < 18 ? "Dobry den" : "Dobry vecer";
+  const greeting = hour < 12 ? "Dobré ráno" : hour < 18 ? "Dobrý den" : "Dobrý večer";
 
   const allTemplates = getAllTemplates();
 
@@ -431,7 +431,7 @@ function Dashboard() {
   const handleDeleteCustom = (id: string, name: string) => {
     deleteCustomTemplate(id);
     setCustomTemplates(getCustomTemplates());
-    toast.success(`Sablona "${name}" smazana`);
+    toast.success(`Šablona "${name}" smazána`);
   };
 
   return (
@@ -444,7 +444,7 @@ function Dashboard() {
               <div>
                 <p className="text-sm text-muted-foreground mb-1">{greeting},</p>
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                  {user?.name || "uzivateli"}
+                  {user?.name || "uživateli"}
                 </h1>
               </div>
 
@@ -455,7 +455,7 @@ function Dashboard() {
                   </div>
                   <div>
                     <p className="font-medium text-foreground">{allTemplates.length}</p>
-                    <p className="text-xs">sablon</p>
+                    <p className="text-xs">šablon</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -464,7 +464,7 @@ function Dashboard() {
                   </div>
                   <div>
                     <p className="font-medium text-foreground">{useCases.length}</p>
-                    <p className="text-xs">sad dokumentu</p>
+                    <p className="text-xs">sad dokumentů</p>
                   </div>
                 </div>
                 {customTemplates.length > 0 && (
@@ -474,7 +474,7 @@ function Dashboard() {
                     </div>
                     <div>
                       <p className="font-medium text-foreground">{customTemplates.length}</p>
-                      <p className="text-xs">vlastnich</p>
+                      <p className="text-xs">vlastních</p>
                     </div>
                   </div>
                 )}
@@ -491,7 +491,7 @@ function Dashboard() {
           <section>
             <div className="flex items-center gap-3 mb-5 sm:mb-6">
               <div className="h-8 w-1 rounded-full bg-gradient-to-b from-primary to-primary/30" />
-              <h2 className="text-lg sm:text-xl font-bold">Rychle akce</h2>
+              <h2 className="text-lg sm:text-xl font-bold">Rychlé akce</h2>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -508,8 +508,8 @@ function Dashboard() {
                     <Plus className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-semibold text-sm sm:text-base leading-tight">Novy dokument</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Vyberte sadu nebo sablonu</p>
+                    <h3 className="font-semibold text-sm sm:text-base leading-tight">Nový dokument</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Vyberte sadu nebo šablonu</p>
                   </div>
                 </div>
               </Link>
@@ -523,8 +523,8 @@ function Dashboard() {
                     <Upload className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-semibold text-sm sm:text-base leading-tight">Nahrat dokument</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Vytvorit sablonu z DOCX</p>
+                    <h3 className="font-semibold text-sm sm:text-base leading-tight">Nahrát dokument</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Vytvořit šablonu z DOCX</p>
                   </div>
                 </div>
               </Link>
@@ -540,8 +540,8 @@ function Dashboard() {
                     <BookOpen className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-semibold text-sm sm:text-base leading-tight">Katalog sablon</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">{allTemplates.length} pripravenych sablon</p>
+                    <h3 className="font-semibold text-sm sm:text-base leading-tight">Katalog šablon</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">{allTemplates.length} připravených šablon</p>
                   </div>
                 </div>
               </button>
@@ -553,8 +553,8 @@ function Dashboard() {
             <div className="flex items-center gap-3 mb-5 sm:mb-6">
               <div className="h-8 w-1 rounded-full bg-gradient-to-b from-primary to-primary/30" />
               <div>
-                <h2 className="text-lg sm:text-xl font-bold">Sady dokumentu</h2>
-                <p className="text-xs sm:text-sm text-muted-foreground">Vyberte zivotni situaci a vygenerujte kompletni sadu</p>
+                <h2 className="text-lg sm:text-xl font-bold">Sady dokumentů</h2>
+                <p className="text-xs sm:text-sm text-muted-foreground">Vyberte životní situaci a vygenerujte kompletní sadu</p>
               </div>
             </div>
 
@@ -568,8 +568,8 @@ function Dashboard() {
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-1 rounded-full bg-gradient-to-b from-violet-500 to-violet-500/30" />
                   <div>
-                    <h2 className="text-lg sm:text-xl font-bold">Vlastni sablony</h2>
-                    <p className="text-xs sm:text-sm text-muted-foreground">Sablony vytvorene z nahranych dokumentu</p>
+                    <h2 className="text-lg sm:text-xl font-bold">Vlastní šablony</h2>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Šablony vytvořené z nahraných dokumentů</p>
                   </div>
                 </div>
                 <Link
@@ -577,7 +577,7 @@ function Dashboard() {
                   className="text-xs sm:text-sm text-primary hover:underline inline-flex items-center gap-1"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Pridat</span>
+                  <span className="hidden sm:inline">Přidat</span>
                 </Link>
               </div>
 
@@ -590,7 +590,7 @@ function Dashboard() {
                     <button
                       onClick={() => handleDeleteCustom(ct.id, ct.name)}
                       className="absolute top-3 right-3 h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
-                      title="Smazat sablonu"
+                      title="Smazat šablonu"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -629,7 +629,7 @@ function Dashboard() {
                     <div className="mt-auto">
                       <Button asChild className="w-full rounded-xl group/btn" size="sm">
                         <Link href={`/generate?template=custom:${ct.id}`}>
-                          Pouzit sablonu
+                          Použít šablonu
                           <ArrowRight className="h-3.5 w-3.5 ml-1 transition-transform group-hover/btn:translate-x-0.5" />
                         </Link>
                       </Button>
@@ -653,10 +653,10 @@ function Dashboard() {
                 <div className="h-8 w-1 rounded-full bg-gradient-to-b from-muted-foreground/30 to-muted-foreground/10" />
                 <div className="text-left">
                   <h2 className="text-lg sm:text-xl font-bold text-foreground/80 group-hover:text-foreground transition-colors">
-                    Jednotlive sablony
+                    Jednotlivé šablony
                   </h2>
                   <p className="text-xs sm:text-sm text-muted-foreground">
-                    Nebo si vyberte konkretni dokument
+                    Nebo si vyberte konkrétní dokument
                   </p>
                 </div>
               </div>
