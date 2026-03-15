@@ -381,8 +381,10 @@ interface FieldContext {
 
 /** Map of English role IDs used in field names */
 const ROLE_MAP: { pattern: RegExp; role: string }[] = [
-  { pattern: /(?:kupující|objednatel|nabyvatel)/, role: "buyer" },
+  { pattern: /(?:kupující|objednatel)/, role: "buyer" },
   { pattern: /(?:prodávající|zhotovitel|dodavatel|poskytovatel)/, role: "seller" },
+  { pattern: /(?:nabyvatel)/, role: "nabyvatel" },
+  { pattern: /(?:převodce)/, role: "prevodce" },
   { pattern: /(?:zaměstnavatel)/, role: "employer" },
   { pattern: /(?:zaměstnanec|pracovník)/, role: "employee" },
   { pattern: /(?:zmocnitel|zmocňovatel)/, role: "principal" },
@@ -397,24 +399,144 @@ const ROLE_MAP: { pattern: RegExp; role: string }[] = [
   { pattern: /(?:právnická\s*osoba)/, role: "company" },
 ];
 
+/**
+ * Detect explicit role labels defined in the document itself.
+ *
+ * Czech legal documents often define party roles in parentheses, e.g.:
+ *   Štěpán Černohorský (dále jen „Převodce")
+ *   MONTE NEGRO HOLDING a.s. (dále jen „Nabyvatel")
+ *   (dále jen „Společnost")
+ *
+ * These explicit labels take priority over generic ROLE_MAP detection.
+ * Returns a Map from the lowercase Czech label to its first occurrence position.
+ */
+function detectExplicitRoles(text: string): Map<string, { label: string; pos: number }> {
+  const roles = new Map<string, { label: string; pos: number }>();
+  // Match patterns like: (dále jen „Převodce"), (dále jen „Nabyvatel"), ("Převodce")
+  const regex = /\(\s*(?:dále\s+jen\s+)?[„"\u201E"]([\wáčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ\s]+)["""\u201C]\s*\)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = regex.exec(text)) !== null) {
+    const label = m[1].trim();
+    const lower = label.toLowerCase();
+    if (!roles.has(lower)) {
+      roles.set(lower, { label, pos: m.index });
+    }
+  }
+  return roles;
+}
+
+/**
+ * Build a position→role map from explicit role definitions.
+ *
+ * For each (dále jen „X") at position P, find the start of its paragraph/section
+ * (the nearest preceding double-newline or start of text). Any entity detected
+ * between that start and P should get role X.
+ *
+ * Returns sorted zones: [{ start, end, role }]
+ */
+interface RoleZone {
+  start: number;
+  end: number;
+  role: string;
+  label: string;
+}
+
+function buildRoleZones(text: string, explicitRoles: Map<string, { label: string; pos: number }>): RoleZone[] {
+  const zones: RoleZone[] = [];
+
+  for (const [, { label, pos }] of explicitRoles) {
+    // Determine the role ID: check ROLE_MAP first, then use slug
+    const lower = label.toLowerCase();
+    let roleId: string | null = null;
+    for (const { pattern, role } of ROLE_MAP) {
+      if (new RegExp(pattern.source, "i").test(lower)) {
+        roleId = role;
+        break;
+      }
+    }
+    if (!roleId) roleId = slugifyRole(label);
+
+    // Find the start of the section (last double-newline or previous role zone end)
+    const beforePos = text.lastIndexOf("\n\n", pos);
+    const start = beforePos >= 0 ? beforePos + 2 : 0;
+
+    zones.push({ start, end: pos, role: roleId, label });
+  }
+
+  // Sort by start position
+  zones.sort((a, b) => a.start - b.start);
+  return zones;
+}
+
+/**
+ * Find the role for a given text position using the pre-built role zones.
+ * Returns the role string if the position falls within a zone, or empty string.
+ */
+function findRoleByPosition(zones: RoleZone[], matchIndex: number): string {
+  for (const zone of zones) {
+    if (matchIndex >= zone.start && matchIndex < zone.end) {
+      return zone.role;
+    }
+  }
+  return "";
+}
+
+/**
+ * Sections of the document that contain verification/notary content.
+ * People detected in these sections are NOT contract parties.
+ */
+const VERIFICATION_SECTION_PATTERNS = [
+  /prohlášení\s+o\s+pravosti\s+podpis/i,
+  /ověření\s+podpis/i,
+  /legalizac/i,
+  /notářsk[ýáé]\s+zápis/i,
+  /úředně\s+ověřen/i,
+];
+
 /** Company legal suffix pattern for entity boundary detection */
 const COMPANY_SUFFIX_DETECT = /(?:s\.r\.o\.|a\.s\.|k\.s\.|v\.o\.s\.|z\.s\.|spol\.\s*s\s*r\.o\.|akciová\s+společnost|společnost\s+s\s+ručením\s+omezeným)/gi;
+
+/**
+ * Check if a position in the text falls within a verification/notary section.
+ * People detected in these sections are NOT contract parties.
+ */
+function isInVerificationSection(text: string, matchIndex: number): boolean {
+  // Look backwards from the match position for a verification section header
+  const textBefore = text.slice(Math.max(0, matchIndex - 500), matchIndex).toLowerCase();
+  for (const pattern of VERIFICATION_SECTION_PATTERNS) {
+    if (pattern.test(textBefore)) {
+      // Check there's no new major section between the header and our position
+      // (double newline typically separates sections)
+      const lastMatch = textBefore.lastIndexOf(textBefore.match(pattern)?.[0]?.toLowerCase() || "");
+      if (lastMatch >= 0) {
+        const between = textBefore.slice(lastMatch);
+        // If there's a new article/section header, we've left the verification section
+        if (!/(?:článek|čl\.|bod\s+\d|strana\s+\d)/i.test(between)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
 
 /** Detect the entity role from context text preceding the match.
  *  Finds the CLOSEST (most recent) role keyword to get accurate assignment.
  *
- *  KEY RULE: If a company legal suffix (a.s., s.r.o., etc.) appears AFTER the
+ *  KEY RULE 1: If the document defines explicit roles via (dále jen „X"), those
+ *  take priority over generic ROLE_MAP detection.
+ *
+ *  KEY RULE 2: If a company legal suffix (a.s., s.r.o., etc.) appears AFTER the
  *  last role keyword, it means a new company entity was introduced. In that case,
- *  return "company" instead of the stale role keyword from further back.
- *  This prevents assigning a company's address to "buyer" just because "kupující"
- *  appeared earlier in the document. */
-function detectRole(textBefore: string): string {
+ *  return "company" instead of the stale role keyword from further back. */
+function detectRole(textBefore: string, explicitRoles?: Map<string, { label: string; pos: number }>): string {
   const lower = textBefore.toLowerCase();
   const context = lower.slice(-500);
 
   let bestRole = "";
   let bestPos = -1;
 
+  // PRIORITY 1: Standard ROLE_MAP keywords
   for (const { pattern, role } of ROLE_MAP) {
     const regex = new RegExp(pattern.source, "gi");
     let m: RegExpExecArray | null;
@@ -422,6 +544,31 @@ function detectRole(textBefore: string): string {
       if (m.index > bestPos) {
         bestPos = m.index;
         bestRole = role;
+      }
+    }
+  }
+
+  // PRIORITY 2: Document-defined explicit roles (e.g. „Převodce", „Nabyvatel").
+  // These override ROLE_MAP only for labels that don't already have a ROLE_MAP mapping.
+  // E.g. „kupující" already maps to "buyer" via ROLE_MAP, so we keep "buyer".
+  // But „Převodce" is not in ROLE_MAP, so it gets its own slug "prevodce".
+  if (explicitRoles && explicitRoles.size > 0) {
+    for (const [roleLower, { label }] of explicitRoles) {
+      // Skip if this label already has a ROLE_MAP mapping (detected above)
+      const hasRoleMapMatch = ROLE_MAP.some(({ pattern }) =>
+        new RegExp(pattern.source, "i").test(roleLower)
+      );
+      if (hasRoleMapMatch) continue;
+
+      const slug = slugifyRole(label);
+      const escapedLabel = roleLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const roleRegex = new RegExp(escapedLabel, "gi");
+      let m: RegExpExecArray | null;
+      while ((m = roleRegex.exec(context)) !== null) {
+        if (m.index > bestPos) {
+          bestPos = m.index;
+          bestRole = slug;
+        }
       }
     }
   }
@@ -466,10 +613,21 @@ function detectRole(textBefore: string): string {
 }
 
 /** Czech label for entity/role used in UI groups */
-function roleToLabel(role: string): string {
+function roleToLabel(role: string, explicitRoles?: Map<string, { label: string; pos: number }>): string {
+  // If the document defines this role explicitly, use the document's label
+  if (explicitRoles) {
+    for (const [, { label }] of explicitRoles) {
+      if (label.toLowerCase() === role || slugifyRole(label) === role) {
+        return label;
+      }
+    }
+  }
+
   const map: Record<string, string> = {
     buyer: "Kupující",
     seller: "Prodávající",
+    nabyvatel: "Nabyvatel",
+    prevodce: "Převodce",
     employer: "Zaměstnavatel",
     employee: "Zaměstnanec",
     principal: "Zmocnitel",
@@ -484,6 +642,18 @@ function roleToLabel(role: string): string {
     company: "Společnost",
   };
   return map[role] || role;
+}
+
+/** Convert a Czech role label to an ASCII-safe slug for use in field names */
+function slugifyRole(label: string): string {
+  return label.trim().toLowerCase()
+    .replace(/á/g, "a").replace(/č/g, "c").replace(/ď/g, "d")
+    .replace(/é/g, "e").replace(/ě/g, "e").replace(/í/g, "i")
+    .replace(/ň/g, "n").replace(/ó/g, "o").replace(/ř/g, "r")
+    .replace(/š/g, "s").replace(/ť/g, "t").replace(/ú/g, "u")
+    .replace(/ů/g, "u").replace(/ý/g, "y").replace(/ž/g, "z")
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]/g, "");
 }
 
 function makeFieldName(prefix: string, role: string, ctx: FieldContext): string {
@@ -583,6 +753,28 @@ function detectReplacements(text: string): {
   const notes: string[] = [];
   const ctx: FieldContext = { counters: {}, replacedTexts: new Set() };
   const replacements: { original: string; placeholder: string; field: DetectedField }[] = [];
+
+  // Detect explicit role labels defined in the document (e.g. „Převodce", „Nabyvatel")
+  const explicitRoles = detectExplicitRoles(text);
+  const roleZones = buildRoleZones(text, explicitRoles);
+  if (explicitRoles.size > 0) {
+    const labels = Array.from(explicitRoles.values()).map(r => r.label);
+    notes.push(`Nalezeny role definované v dokumentu: ${labels.join(", ")}`);
+  }
+
+  /**
+   * Resolve the role for a match at a given position.
+   * Priority: 1) Position-based zone (explicit role label defines preceding section)
+   *           2) Context-based detectRole (ROLE_MAP keywords in preceding text)
+   */
+  const resolveRole = (matchIndex: number, textBefore: string): string => {
+    // First: check if this position falls within an explicit role zone
+    const zoneRole = findRoleByPosition(roleZones, matchIndex);
+    if (zoneRole) return zoneRole;
+    // Fallback: standard context-based detection
+    return detectRole(textBefore, explicitRoles);
+  };
+
   // Track value→fieldName for deduplication (same value = same placeholder)
   const valueToField = new Map<string, string>();
   // Track entity groupings
@@ -615,7 +807,7 @@ function detectReplacements(text: string): {
     allDetectedValues.add(value);
 
     const name = makeFieldName(namePrefix, role, ctx);
-    const group = roleToLabel(role) || defaultGroup;
+    const group = roleToLabel(role, explicitRoles) || defaultGroup;
     const occurrences = countOccurrences(text, value);
 
     valueToField.set(value, name);
@@ -632,7 +824,7 @@ function detectReplacements(text: string): {
       field: {
         name,
         type,
-        title: role ? `${titlePrefix} (${roleToLabel(role)})` : titlePrefix,
+        title: role ? `${titlePrefix} (${roleToLabel(role, explicitRoles)})` : titlePrefix,
         description,
         example: value.trim(),
         group,
@@ -658,7 +850,7 @@ function detectReplacements(text: string): {
       const value = match[1].trim().replace(/,\s*$/, ""); // trim trailing comma
       if (value.length < 5) continue;
       const textBefore = text.slice(0, match.index);
-      const role = detectRole(textBefore);
+      const role = resolveRole(match.index, textBefore);
       addReplacement(value, role, "address", "textarea", "Adresa", "Adresa", "Úplná adresa", true);
     }
   }
@@ -701,19 +893,24 @@ function detectReplacements(text: string): {
       const companyName = namePart + (namePart.endsWith(" ") || match[0].startsWith(" ") ? "" : " ") + match[0];
       if (companyName.length < 4) continue;
 
-      const textBefore = text.slice(0, lineStart + before.lastIndexOf(words[nameStart] || ""));
-      // Company names always get "company" role — they ARE the company entity.
-      // detectRole might return a stale party keyword (e.g. "buyer") from further back,
-      // but the entity itself is a company, so we prefer "company" unless an explicit
-      // party keyword like "prodávající" is on the SAME line.
-      let role = detectRole(textBefore);
-      const sameLine = text.slice(lineStart, match.index).toLowerCase();
-      const hasExplicitPartyOnLine = ROLE_MAP.some(({ pattern, role: r }) =>
-        r !== "representative" && r !== "administrator" && r !== "shareholder" && r !== "company"
-        && new RegExp(pattern.source, "i").test(sameLine)
-      );
-      if (!hasExplicitPartyOnLine) {
-        role = "company";
+      const companyNameStart = lineStart + before.lastIndexOf(words[nameStart] || "");
+      const textBefore = text.slice(0, companyNameStart);
+      // First check if this company falls in an explicit role zone
+      let role = findRoleByPosition(roleZones, companyNameStart);
+      if (!role) {
+        // Company names always get "company" role — they ARE the company entity.
+        // detectRole might return a stale party keyword (e.g. "buyer") from further back,
+        // but the entity itself is a company, so we prefer "company" unless an explicit
+        // party keyword like "prodávající" is on the SAME line.
+        role = detectRole(textBefore, explicitRoles);
+        const sameLine = text.slice(lineStart, match.index).toLowerCase();
+        const hasExplicitPartyOnLine = ROLE_MAP.some(({ pattern, role: r }) =>
+          r !== "representative" && r !== "administrator" && r !== "shareholder" && r !== "company"
+          && new RegExp(pattern.source, "i").test(sameLine)
+        );
+        if (!hasExplicitPartyOnLine) {
+          role = "company";
+        }
       }
       addReplacement(companyName, role, "company_name", "text", "Firma", "Společnost", "Název společnosti", true);
     }
@@ -726,7 +923,7 @@ function detectReplacements(text: string): {
     while ((match = regex.exec(text)) !== null) {
       const value = match[1];
       const textBefore = text.slice(0, match.index);
-      const role = detectRole(textBefore);
+      const role = resolveRole(match.index, textBefore);
       addReplacement(value, role, "birth_date", "date", "Datum narození", "Osobní údaje", "Datum narození", true);
     }
   }
@@ -740,6 +937,9 @@ function detectReplacements(text: string): {
     while ((match = regex.exec(text)) !== null) {
       const value = match[1].trim();
       if (value.length < 4) continue;
+
+      // Skip names found in verification/notary sections
+      if (isInVerificationSection(text, match.index)) continue;
 
       // Skip common Czech legal/document terms that look like names (capitalized words)
       const skipWords = [
@@ -807,7 +1007,7 @@ function detectReplacements(text: string): {
         if (fullCount <= 1 && (combo1Count > fullCount || combo2Count > fullCount)) continue;
       }
 
-      const role = detectRole(textBefore);
+      const role = resolveRole(match.index, textBefore);
       addReplacement(value, role, "name", "text", "Jméno a příjmení", "Osobní údaje", "Celé jméno osoby", true);
       detectedNames.push(value);
     }
@@ -823,7 +1023,7 @@ function detectReplacements(text: string): {
     while ((match = regex.exec(text)) !== null) {
       const value = match[1] || match[0];
       const textBefore = text.slice(0, match.index);
-      let role = detectRole(textBefore);
+      let role = resolveRole(match.index, textBefore);
 
       // Amounts preceded by contract-level keywords (kupní cena, cena, celková částka)
       // should not be assigned to a specific party — they belong to the contract itself
@@ -853,7 +1053,7 @@ function detectReplacements(text: string): {
 
       // Check if it's a birth date context — if so, use birth_date naming
       const textBefore = text.slice(0, match.index);
-      const role = detectRole(textBefore);
+      const role = resolveRole(match.index, textBefore);
       if (isBirthDateContext(text, match.index)) {
         addReplacement(value, role, "birth_date", "date", "Datum narození", "Osobní údaje", "Datum narození", true);
       } else {
@@ -902,7 +1102,7 @@ function detectReplacements(text: string): {
       const value = match[1];
       if (isFragmentOf(value, allDetectedValues)) continue;
       const textBefore = text.slice(0, match.index);
-      const role = detectRole(textBefore);
+      const role = resolveRole(match.index, textBefore);
       addReplacement(value, role, "postal_code", "text", "PSČ", "Adresa", "Poštovní směrovací číslo", true);
     }
   }
@@ -917,7 +1117,7 @@ function detectReplacements(text: string): {
     while ((match = regex.exec(text)) !== null) {
       const value = match[1];
       const textBefore = text.slice(0, match.index);
-      const role = detectRole(textBefore);
+      const role = resolveRole(match.index, textBefore);
       addReplacement(value, role, "email", "text", "E-mail", "Kontakt", "E-mailová adresa", false);
     }
   }
@@ -928,7 +1128,7 @@ function detectReplacements(text: string): {
     while ((match = regex.exec(text)) !== null) {
       const value = match[1].trim();
       const textBefore = text.slice(0, match.index);
-      const role = detectRole(textBefore);
+      const role = resolveRole(match.index, textBefore);
       addReplacement(value, role, "phone", "text", "Telefon", "Kontakt", "Telefonní číslo", false);
     }
   }
@@ -948,7 +1148,7 @@ function detectReplacements(text: string): {
   for (const [role, fieldNames] of entityFields.entries()) {
     entities.push({
       id: role,
-      label: roleToLabel(role),
+      label: roleToLabel(role, explicitRoles),
       role,
       fields: [...fieldNames],
     });
@@ -982,7 +1182,7 @@ function detectReplacements(text: string): {
     if (!partyMap.has(role)) {
       partyMap.set(role, {
         role,
-        label: roleToLabel(role),
+        label: roleToLabel(role, explicitRoles),
         attributes: {},
         fieldNames: [],
       });
@@ -1011,8 +1211,13 @@ function detectReplacements(text: string): {
 
   const expectedPair = CONTRACT_ROLE_PAIRS[contractType];
 
-  // 1. Merge "company" into the appropriate main party
-  if (expectedPair && partyMap.has("company")) {
+  // Check if "Společnost" is an explicitly defined role in the document.
+  // If so, it's a transaction object (e.g. the company being sold/transferred)
+  // and should NOT be merged into buyer/seller.
+  const isCompanyExplicitRole = explicitRoles.has("společnost") || explicitRoles.has("společnosti");
+
+  // 1. Merge "company" into the appropriate main party (only if not explicitly defined)
+  if (expectedPair && partyMap.has("company") && !isCompanyExplicitRole) {
     const companyParty = partyMap.get("company")!;
     const hasRole1 = partyMap.has(expectedPair[0]);
     const hasRole2 = partyMap.has(expectedPair[1]);
@@ -1028,13 +1233,13 @@ function detectReplacements(text: string): {
         }
       } else {
         companyParty.role = targetRole;
-        companyParty.label = roleToLabel(targetRole);
+        companyParty.label = roleToLabel(targetRole, explicitRoles);
         partyMap.set(targetRole, companyParty);
       }
     } else {
       // Company is the only party — relabel it as the second role (seller/landlord/etc.)
       companyParty.role = expectedPair[1];
-      companyParty.label = roleToLabel(expectedPair[1]);
+      companyParty.label = roleToLabel(expectedPair[1], explicitRoles);
       partyMap.set(expectedPair[1], companyParty);
     }
     partyMap.delete("company");

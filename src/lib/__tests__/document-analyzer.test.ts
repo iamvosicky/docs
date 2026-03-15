@@ -403,4 +403,72 @@ describe("document-analyzer", () => {
       }
     });
   });
+
+  describe("explicit role detection", () => {
+    it('uses document-defined roles like "Převodce" and "Nabyvatel"', () => {
+      const input = [
+        "SMLOUVA O PŘEVODU PODÍLU",
+        "",
+        'Štěpán Černohorský, nar. 30. 03. 1996, bytem č.p. 102, 263 01 Obory',
+        '(dále jen \u201EPřevodce\u201C)',
+        "",
+        "MONTE NEGRO HOLDING a.s., IČO 231 68 501, se sídlem č.p. 95, 261 01 Drásov",
+        '(dále jen \u201ENabyvatel\u201C)',
+      ].join("\n");
+
+      const result = analyzeDocument(input);
+
+      // Should use document-defined role names
+      const prevodce = result.parties.find((p) => p.label === "Převodce");
+      const nabyvatel = result.parties.find((p) => p.label === "Nabyvatel");
+
+      expect(prevodce).toBeDefined();
+      expect(nabyvatel).toBeDefined();
+
+      // Převodce should have the person's data
+      expect(prevodce!.fieldNames.some(f => f.includes("name"))).toBe(true);
+      expect(prevodce!.fieldNames.some(f => f.includes("address"))).toBe(true);
+
+      // Nabyvatel should have the company's data
+      expect(nabyvatel!.fieldNames.some(f => f.includes("company_name"))).toBe(true);
+    });
+
+    it('keeps "Společnost" as a separate entity when explicitly defined', () => {
+      const input = [
+        "SMLOUVA O PŘEVODU PODÍLU",
+        "",
+        'Štěpán Černohorský, bytem č.p. 102, 263 01 Obory',
+        '(dále jen \u201EPřevodce\u201C)',
+        "",
+        "M.N. DLOUHÁ s.r.o., IČO 240 05 932",
+        '(dále jen \u201ESpolečnost\u201C)',
+      ].join("\n");
+
+      const result = analyzeDocument(input);
+
+      const spolecnost = result.parties.find((p) => p.label === "Společnost");
+      expect(spolecnost).toBeDefined();
+      // Should NOT be merged into buyer or seller
+      expect(spolecnost!.role).not.toBe("buyer");
+      expect(spolecnost!.role).not.toBe("seller");
+    });
+
+    it("excludes verification section people from parties", () => {
+      const input = [
+        "SMLOUVA",
+        "",
+        "Kupující: Jan Novák, bytem č.p. 1, 100 00 Praha",
+        "",
+        "Prohlášení o pravosti podpisu",
+        "Ověřil JUDr. Karel Novotný v Brně",
+      ].join("\n");
+
+      const result = analyzeDocument(input);
+
+      // Karel Novotný should NOT be detected as a party
+      const nameFields = result.fields.filter((f) => f.name.includes("name") && f.type === "text");
+      const notaryDetected = nameFields.some((f) => f.example.includes("Novotný"));
+      expect(notaryDetected).toBe(false);
+    });
+  });
 });
