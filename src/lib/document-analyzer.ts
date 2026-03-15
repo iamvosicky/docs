@@ -110,7 +110,7 @@ const PATTERNS: PatternRule[] = [
     namePrefix: "birth_number",
     type: "rc",
     titlePrefix: "Rodné číslo",
-    group: "Osobní údaje",
+    group: "Smluvní strana",
     description: "Rodné číslo",
   },
   {
@@ -379,7 +379,12 @@ interface FieldContext {
   replacedTexts: Set<string>;
 }
 
-/** Map of English role IDs used in field names */
+/** Map of English role IDs used in field names.
+ *
+ *  IMPORTANT: Only contract party roles are included here.
+ *  Roles like "representative", "shareholder", "administrator" are NOT auto-detected.
+ *  They are only used if the document explicitly defines them via (dále jen „X").
+ *  This prevents false entity creation (rule 8). */
 const ROLE_MAP: { pattern: RegExp; role: string }[] = [
   { pattern: /(?:kupující|objednatel)/, role: "buyer" },
   { pattern: /(?:prodávající|zhotovitel|dodavatel|poskytovatel)/, role: "seller" },
@@ -393,9 +398,6 @@ const ROLE_MAP: { pattern: RegExp; role: string }[] = [
   { pattern: /(?:pronajímatel)/, role: "landlord" },
   { pattern: /(?:věřitel)/, role: "creditor" },
   { pattern: /(?:dlužník)/, role: "debtor" },
-  { pattern: /(?:jednatel|statutární|ředitel|předseda)/, role: "representative" },
-  { pattern: /(?:správce\s*vkladu)/, role: "administrator" },
-  { pattern: /(?:akcionář|společník|vlastník)/, role: "shareholder" },
   { pattern: /(?:právnická\s*osoba)/, role: "company" },
 ];
 
@@ -491,6 +493,9 @@ const VERIFICATION_SECTION_PATTERNS = [
   /legalizac/i,
   /notářsk[ýáé]\s+zápis/i,
   /úředně\s+ověřen/i,
+  /podpisová\s+strana/i,
+  /potvrzení\s+o\s+doručení/i,
+  /ověřovací\s+doložk/i,
 ];
 
 /** Company legal suffix pattern for entity boundary detection */
@@ -849,6 +854,8 @@ function detectReplacements(text: string): {
     while ((match = regex.exec(text)) !== null) {
       const value = match[1].trim().replace(/,\s*$/, ""); // trim trailing comma
       if (value.length < 5) continue;
+      // Skip addresses in verification/certification sections
+      if (isInVerificationSection(text, match.index)) continue;
       const textBefore = text.slice(0, match.index);
       const role = resolveRole(match.index, textBefore);
       addReplacement(value, role, "address", "textarea", "Adresa", "Adresa", "Úplná adresa", true);
@@ -862,6 +869,8 @@ function detectReplacements(text: string): {
     const suffixRegex = new RegExp(COMPANY_SUFFIX.source, "gi");
     let match: RegExpExecArray | null;
     while ((match = suffixRegex.exec(text)) !== null) {
+      // Skip companies in verification/certification sections
+      if (isInVerificationSection(text, match.index)) continue;
       const suffixEnd = match.index + match[0].length;
       // Get text before the suffix on the same line
       const lineStart = text.lastIndexOf("\n", match.index) + 1;
@@ -924,7 +933,7 @@ function detectReplacements(text: string): {
       const value = match[1];
       const textBefore = text.slice(0, match.index);
       const role = resolveRole(match.index, textBefore);
-      addReplacement(value, role, "birth_date", "date", "Datum narození", "Osobní údaje", "Datum narození", true);
+      addReplacement(value, role, "birth_date", "date", "Datum narození", "Smluvní strana", "Datum narození", true);
     }
   }
 
@@ -1008,7 +1017,7 @@ function detectReplacements(text: string): {
       }
 
       const role = resolveRole(match.index, textBefore);
-      addReplacement(value, role, "name", "text", "Jméno a příjmení", "Osobní údaje", "Celé jméno osoby", true);
+      addReplacement(value, role, "name", "text", "Jméno a příjmení", "Smluvní strana", "Celé jméno osoby", true);
       detectedNames.push(value);
     }
   }
@@ -1021,6 +1030,8 @@ function detectReplacements(text: string): {
     let match: RegExpExecArray | null;
     const regex = new RegExp(rule.pattern.source, rule.pattern.flags);
     while ((match = regex.exec(text)) !== null) {
+      // Skip values in verification/certification sections
+      if (isInVerificationSection(text, match.index)) continue;
       const value = match[1] || match[0];
       const textBefore = text.slice(0, match.index);
       let role = resolveRole(match.index, textBefore);
@@ -1055,7 +1066,7 @@ function detectReplacements(text: string): {
       const textBefore = text.slice(0, match.index);
       const role = resolveRole(match.index, textBefore);
       if (isBirthDateContext(text, match.index)) {
-        addReplacement(value, role, "birth_date", "date", "Datum narození", "Osobní údaje", "Datum narození", true);
+        addReplacement(value, role, "birth_date", "date", "Datum narození", "Smluvní strana", "Datum narození", true);
       } else {
         // Detect semantic context for the date
         const before60 = text.slice(Math.max(0, match.index - 80), match.index).toLowerCase();
