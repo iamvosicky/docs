@@ -114,7 +114,7 @@ export default function DashboardPage() {
           <Link href="/upload">
             <Button
               size="sm"
-              className="rounded-full h-9 px-4 gap-1.5 text-[13px] font-medium shadow-sm"
+              className="rounded-xl h-9 px-4 gap-1.5 text-[13px] font-medium shadow-sm"
             >
               <Upload className="h-3.5 w-3.5" />
               Nahrát
@@ -167,6 +167,45 @@ export default function DashboardPage() {
           </section>
         )}
 
+        {/* ─── Start from template ─── */}
+        {isClient && availablePresets.length > 0 && (
+          <section>
+            <p className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-widest mb-4">
+              Začněte ze šablony
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {availablePresets.map(preset => (
+                <div
+                  key={preset.id}
+                  className="rounded-2xl bg-card p-5 flex flex-col"
+                >
+                  <div className="h-10 w-10 rounded-[14px] bg-gradient-to-br from-emerald-500/10 to-teal-500/10 flex items-center justify-center mb-3">
+                    <Layers className="h-5 w-5 text-emerald-500/70" />
+                  </div>
+                  <h3 className="text-[15px] font-semibold leading-snug mb-1">{preset.name}</h3>
+                  <p className="text-[12px] text-muted-foreground/60 leading-relaxed mb-3 flex-1">
+                    {preset.description}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground/40">
+                      {preset.templateIds.length} {preset.templateIds.length === 1 ? 'dokument' : preset.templateIds.length < 5 ? 'dokumenty' : 'dokumentů'}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-xl h-7 px-3 text-[11px] font-medium text-muted-foreground/60 hover:text-foreground"
+                      onClick={() => handleCreateFromTemplate(preset)}
+                    >
+                      Vytvořit
+                      <ArrowRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* ─── Document Sets ─── */}
         {isClient && (
           <section>
@@ -192,7 +231,7 @@ export default function DashboardPage() {
                   Seskupte související dokumenty a vyplňte sdílená data jednou pro všechny.
                 </p>
                 <Link href="/app/sets">
-                  <Button variant="outline" size="sm" className="rounded-full h-8 px-4 text-[12px] gap-1.5 font-medium">
+                  <Button variant="outline" size="sm" className="rounded-xl h-8 px-4 text-[12px] gap-1.5 font-medium">
                     <Plus className="h-3 w-3" />
                     Nová sada
                   </Button>
@@ -281,44 +320,6 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* ─── Start from template ─── */}
-        {isClient && availablePresets.length > 0 && (
-          <section>
-            <p className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-widest mb-4">
-              Začněte ze šablony
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {availablePresets.map(preset => (
-                <div
-                  key={preset.id}
-                  className="rounded-2xl bg-card p-5 flex flex-col"
-                >
-                  <div className="h-10 w-10 rounded-[14px] bg-gradient-to-br from-emerald-500/10 to-teal-500/10 flex items-center justify-center mb-3">
-                    <Layers className="h-5 w-5 text-emerald-500/70" />
-                  </div>
-                  <h3 className="text-[15px] font-semibold leading-snug mb-1">{preset.name}</h3>
-                  <p className="text-[12px] text-muted-foreground/60 leading-relaxed mb-3 flex-1">
-                    {preset.description}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground/40">
-                      {preset.templateIds.length} {preset.templateIds.length === 1 ? 'dokument' : preset.templateIds.length < 5 ? 'dokumenty' : 'dokumentů'}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="rounded-full h-7 px-3 text-[11px] font-medium text-muted-foreground/60 hover:text-foreground"
-                      onClick={() => handleCreateFromTemplate(preset)}
-                    >
-                      Vytvořit
-                      <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
       </div>
     </div>
   );

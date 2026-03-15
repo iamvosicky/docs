@@ -154,13 +154,13 @@ export default function TemplatesPage() {
           <h1 className="text-[28px] sm:text-[34px] font-semibold tracking-tight">Šablony</h1>
           <div className="flex items-center gap-2">
             <Link href="/app/import">
-              <Button variant="ghost" size="sm" className="rounded-full h-8 px-3.5 text-[12px] text-muted-foreground/70 hover:text-foreground gap-1.5">
+              <Button variant="ghost" size="sm" className="rounded-xl h-8 px-3.5 text-[12px] text-muted-foreground/70 hover:text-foreground gap-1.5">
                 <Upload className="h-3.5 w-3.5" />
                 Import
               </Button>
             </Link>
             <Link href="/upload">
-              <Button size="sm" className="rounded-full h-8 px-4 text-[12px] gap-1.5 font-medium shadow-sm">
+              <Button size="sm" className="rounded-xl h-8 px-4 text-[12px] gap-1.5 font-medium shadow-sm">
                 <Plus className="h-3.5 w-3.5" />
                 Nová šablona
               </Button>
@@ -185,7 +185,7 @@ export default function TemplatesPage() {
             <button
               key={cat}
               onClick={() => setCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-full text-[12px] font-medium transition-all duration-150 ${
+              className={`px-3.5 py-1.5 rounded-xl text-[12px] font-medium transition-all duration-150 ${
                 category === cat
                   ? 'bg-foreground text-background shadow-sm'
                   : 'text-muted-foreground/60 hover:text-foreground hover:bg-muted/50'
@@ -294,13 +294,13 @@ export default function TemplatesPage() {
           {!search && category === 'all' && (
             <div className="flex gap-2 justify-center">
               <Link href="/upload">
-                <Button size="sm" className="rounded-full h-8 px-4 text-[12px] gap-1.5 font-medium">
+                <Button size="sm" className="rounded-xl h-8 px-4 text-[12px] gap-1.5 font-medium">
                   <Plus className="h-3 w-3" />
                   Vytvořit
                 </Button>
               </Link>
               <Link href="/app/import">
-                <Button variant="outline" size="sm" className="rounded-full h-8 px-4 text-[12px] gap-1.5 font-medium">
+                <Button variant="outline" size="sm" className="rounded-xl h-8 px-4 text-[12px] gap-1.5 font-medium">
                   <Upload className="h-3 w-3" />
                   Import
                 </Button>
