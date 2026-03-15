@@ -10,7 +10,7 @@ import {
   Upload, FileText, Loader2, ArrowRight, ArrowLeft, Check,
   Sparkles, AlertCircle, Eye, EyeOff, Trash2, Edit3,
   ClipboardList, Search, Download, ChevronDown, ChevronRight,
-  X, CheckCircle2, FileUp
+  X, CheckCircle2, FileUp, FolderOpen
 } from 'lucide-react';
 import {
   analyzeDocx, analyzeDocument,
@@ -19,6 +19,7 @@ import {
 } from '@/lib/document-analyzer';
 import { toast } from 'sonner';
 import { DocumentSetPicker } from '@/components/document-set-picker';
+import { useDocumentSetStore } from '@/lib/document-set-store';
 
 type Step = 'upload' | 'review' | 'done';
 
@@ -35,6 +36,7 @@ export default function UploadPage() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [dragOver, setDragOver] = useState(false);
   const [savedTemplateId, setSavedTemplateId] = useState<string | null>(null);
+  const [selectedSetId, setSelectedSetId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle file selection
@@ -207,7 +209,14 @@ export default function UploadPage() {
     });
     localStorage.setItem('custom_templates', JSON.stringify(saved));
 
-    setSavedTemplateId(`custom:${id}`);
+    const templateFullId = `custom:${id}`;
+    setSavedTemplateId(templateFullId);
+
+    // If a set was selected during upload, add the template to it
+    if (selectedSetId) {
+      useDocumentSetStore.getState().addTemplateToSet(selectedSetId, templateFullId);
+    }
+
     setStep('done');
     toast.success('Šablona uložena');
   };
@@ -427,6 +436,14 @@ export default function UploadPage() {
               </div>
             </div>
           </div>
+
+          {/* Document set — add to set during upload */}
+          <DocumentSetPicker
+            onAdd={(setId, name) => {
+              setSelectedSetId(setId);
+              toast.success(`Dokument bude přidán do sady "${name}"`);
+            }}
+          />
 
           {/* Detected fields by group */}
           {activeGroups.length > 0 ? (
@@ -687,12 +704,21 @@ export default function UploadPage() {
             </div>
           </div>
 
-          {/* Document set picker */}
-          {savedTemplateId && (
+          {/* Document set picker — show if not already assigned during review */}
+          {savedTemplateId && !selectedSetId && (
             <DocumentSetPicker
               templateId={savedTemplateId}
-              onAdd={(_, name) => toast.success(`Přidáno do sady "${name}"`)}
+              onAdd={(setId, name) => {
+                setSelectedSetId(setId);
+                toast.success(`Přidáno do sady "${name}"`);
+              }}
             />
+          )}
+          {selectedSetId && (
+            <div className="rounded-xl border bg-card/50 p-4 flex items-center gap-2 text-sm text-primary">
+              <FolderOpen className="h-4 w-4" />
+              <span>Součástí sady &bdquo;{useDocumentSetStore.getState().getById(selectedSetId)?.name}&ldquo;</span>
+            </div>
           )}
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -705,6 +731,7 @@ export default function UploadPage() {
                 setTemplateName('');
                 setTemplateDescription('');
                 setSavedTemplateId(null);
+                setSelectedSetId(null);
               }}
               className="rounded-xl w-full sm:w-auto"
             >

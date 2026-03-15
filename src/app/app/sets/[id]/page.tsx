@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import {
   ArrowLeft, Plus, FileText, Trash2, ArrowRight, Search,
-  Pencil, X, Check
+  Pencil, X, Check, Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -181,18 +181,33 @@ export default function DocumentSetDetailPage({ params }: { params: Promise<{ id
 
         {docSet.templateIds.length === 0 && !adding && (
           <div className="px-5 py-10 text-center">
-            <p className="text-sm text-muted-foreground mb-3">
-              Tato sada je prázdná
+            <p className="text-sm text-muted-foreground mb-1">
+              Tato sada nemá žádné dokumenty
             </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-xl gap-1.5"
-              onClick={() => setAdding(true)}
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Přidat dokument
-            </Button>
+            <p className="text-xs text-muted-foreground mb-4">
+              Přidejte dokumenty a sdílejte data mezi nimi
+            </p>
+            <div className="flex gap-2 justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-xl gap-1.5"
+                onClick={() => setAdding(true)}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Vybrat šablonu
+              </Button>
+              <Link href="/upload">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl gap-1.5"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  Nahrát dokument
+                </Button>
+              </Link>
+            </div>
           </div>
         )}
 
