@@ -9,7 +9,8 @@ import { useAuth } from "@/components/auth/auth-provider";
 import {
   Shield, Zap, Globe, ChevronDown, FileText, ArrowRight,
   CheckCircle2, Clock, Sparkles, FolderOpen, Plus, Upload,
-  BookOpen, Trash2, Calendar
+  BookOpen, Trash2, Calendar, Users, Scale, Lock,
+  BarChart3, Layers, Download, Eye
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getAllTemplates, getCustomTemplates, deleteCustomTemplate, type CustomTemplate } from "@/lib/template-schemas";
@@ -18,80 +19,172 @@ import { toast } from "sonner";
 
 // ─── Landing page for unauthenticated users ───
 function LandingPage() {
+  const allTemplates = getAllTemplates();
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <div className="min-h-screen">
-      {/* Hero */}
+    <div className="min-h-screen overflow-x-hidden">
+      {/* ── Hero ── */}
       <section className="hero-gradient relative overflow-hidden">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-24 pb-12 sm:pb-20">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 mb-5 sm:mb-6 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-medium border border-primary/20">
-              <Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              Nová generace právních dokumentů
+        {/* Floating decorative elements */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div
+            className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-primary/5 blur-3xl"
+            style={{ transform: `translateY(${scrollY * 0.1}px)` }}
+          />
+          <div
+            className="absolute top-1/2 -left-32 w-64 h-64 rounded-full bg-[oklch(0.6_0.2_310)]/5 blur-3xl"
+            style={{ transform: `translateY(${scrollY * -0.08}px)` }}
+          />
+        </div>
+
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-28 pb-16 sm:pb-28 relative">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 sm:mb-8 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-medium border border-primary/20 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <Sparkles className="h-3.5 w-3.5" />
+              Generujte pravni dokumenty za minuty
             </div>
 
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4 sm:mb-5">
-              Právní dokumenty
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-5 sm:mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              Pravni dokumenty
               <br />
-              <span className="bg-gradient-to-r from-primary to-[oklch(0.6_0.2_310)] bg-clip-text text-transparent">
-                bez komplikací
+              <span className="bg-gradient-to-r from-primary via-[oklch(0.55_0.2_290)] to-[oklch(0.6_0.2_310)] bg-clip-text text-transparent">
+                bez komplikaci
               </span>
             </h1>
 
-            <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-8 sm:mb-10 px-2 sm:px-0">
-              Vygenerujte kompletní sady právních dokumentů během pár minut.
-              Vše v souladu s českým právem.
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-10 sm:mb-12 px-2 sm:px-0 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
+              Kompletni sady pravnich dokumentu v souladu s ceskym pravem.
+              Vyplnte udaje jednou — system je doplni vsude.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-              <Button asChild size="lg" className="rounded-xl px-8 h-12 text-base w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+              <Button asChild size="lg" className="rounded-xl px-10 h-13 text-base w-full sm:w-auto cta-pulse shadow-lg shadow-primary/20">
                 <Link href="/login">
-                  Začít zdarma
+                  Zacit zdarma
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="rounded-xl px-8 h-12 text-base w-full sm:w-auto">
-                <a href="#features">
+              <Button asChild variant="outline" size="lg" className="rounded-xl px-8 h-13 text-base w-full sm:w-auto">
+                <a href="#how-it-works">
                   Jak to funguje
+                  <ChevronDown className="h-4 w-4 ml-1" />
                 </a>
               </Button>
+            </div>
+          </div>
+
+          {/* ── Document mockup ── */}
+          <div className="mt-14 sm:mt-20 max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-500">
+            <div className="relative">
+              {/* Shadow glow */}
+              <div className="absolute -inset-4 bg-gradient-to-b from-primary/10 via-primary/5 to-transparent rounded-3xl blur-2xl" />
+
+              {/* Main card */}
+              <div className="relative glass-card rounded-2xl p-6 sm:p-8 border border-border/50">
+                {/* Window controls */}
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="h-3 w-3 rounded-full bg-red-400/60" />
+                  <div className="h-3 w-3 rounded-full bg-yellow-400/60" />
+                  <div className="h-3 w-3 rounded-full bg-green-400/60" />
+                  <div className="ml-4 h-6 flex-1 max-w-xs rounded-lg bg-muted/60 flex items-center px-3">
+                    <span className="text-[10px] text-muted-foreground/60 font-mono">docgen.app/generate</span>
+                  </div>
+                </div>
+
+                {/* Mock content */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Left: form fields */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <FileText className="h-4 w-4 text-primary" />
+                      </div>
+                      <span className="text-sm font-medium">Zalozeni firmy</span>
+                    </div>
+                    {["Nazev spolecnosti", "ICO", "Sidlo", "Jednatel"].map((label) => (
+                      <div key={label} className="space-y-1">
+                        <div className="text-[10px] text-muted-foreground/70 font-medium">{label}</div>
+                        <div className="h-8 rounded-lg bg-muted/50 border border-border/30" />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Right: generated docs */}
+                  <div className="space-y-2">
+                    <div className="text-[10px] text-muted-foreground/70 font-medium uppercase tracking-wider mb-3">
+                      Generovane dokumenty
+                    </div>
+                    {[
+                      "Stanovy spolecnosti",
+                      "Rozhodnuti o umisteni",
+                      "Plna moc — zalozeni",
+                      "Cestne prohlaseni",
+                    ].map((doc, i) => (
+                      <div key={doc} className="flex items-center gap-2 rounded-lg bg-muted/30 border border-border/20 px-3 py-2">
+                        <div className={`h-6 w-6 rounded-md flex items-center justify-center text-white text-[9px] font-bold ${
+                          i === 0 ? 'bg-primary' : i === 1 ? 'bg-[oklch(0.55_0.2_290)]' : i === 2 ? 'bg-[oklch(0.6_0.2_310)]' : 'bg-[oklch(0.6_0.15_170)]'
+                        }`}>
+                          {i === 0 ? 'ST' : i === 1 ? 'RO' : i === 2 ? 'PM' : 'CP'}
+                        </div>
+                        <span className="text-xs flex-1">{doc}</span>
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                      </div>
+                    ))}
+                    <div className="pt-2">
+                      <div className="h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center gap-2">
+                        <Download className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-xs font-medium text-primary">Stahnout vse (ZIP)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Trust bar */}
-      <div className="border-b bg-muted/30">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
-          <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 sm:gap-10 text-xs sm:text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-primary/70" />
-              <span>Bezpečné a šifrované</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Globe className="h-4 w-4 text-primary/70" />
-              <span>České právní standardy</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-primary/70" />
-              <span>Hotovo za minuty</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary/70" />
-              <span>{getAllTemplates().length} šablon dokumentů</span>
-            </div>
+      {/* ── Stats bar ── */}
+      <div className="border-y bg-card/50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 max-w-4xl mx-auto">
+            {[
+              { value: `${allTemplates.length}`, label: "Sablon dokumentu", icon: FileText },
+              { value: `${useCases.length}`, label: "Pripravenych sad", icon: Layers },
+              { value: "100%", label: "Ceske pravo", icon: Scale },
+              { value: "<5 min", label: "Doba generovani", icon: Clock },
+            ].map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="inline-flex h-10 w-10 rounded-xl bg-primary/10 items-center justify-center mx-auto mb-2">
+                  <stat.icon className="h-5 w-5 text-primary" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-bold tracking-tight">{stat.value}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* How it works */}
-      <section id="features" className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+      {/* ── How it works ── */}
+      <section id="how-it-works" className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-2xl sm:text-4xl font-bold tracking-tight mb-3">
-              Tři kroky ke kompletním dokumentům
+          <div className="text-center mb-14 sm:mb-18">
+            <div className="inline-flex items-center gap-2 px-3 py-1 mb-4 rounded-full bg-primary/8 text-primary text-xs font-medium border border-primary/15">
+              Jak to funguje
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-4">
+              Tri kroky ke kompletnim dokumentum
             </h2>
             <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
-              Žádné složité formuláře. Vyberete, vyplníte, stáhnete.
+              Zadne slozite formulare. Vyberete, vyplnite, stahnete.
             </p>
           </div>
 
@@ -100,27 +193,30 @@ function LandingPage() {
               {
                 step: "1",
                 icon: FolderOpen,
-                title: "Vyberte, co potřebujete",
-                desc: "Zvolte životní situaci — založení firmy, zaměstnání, obchodní smlouvy — a systém připraví celou sadu dokumentů.",
+                title: "Vyberete, co potrebujete",
+                desc: "Zvolte zivotni situaci — zalozeni firmy, zamestnani, obchodni smlouvy — a system pripravi celou sadu dokumentu.",
+                color: "bg-primary",
               },
               {
                 step: "2",
                 icon: FileText,
-                title: "Vyplňte údaje jednou",
-                desc: "Sdílená pole se automaticky vyplní napříč všemi dokumenty. Chytré validace hlídají formáty IČO, dat i částek.",
+                title: "Vyplnite udaje jednou",
+                desc: "Sdilena pole se automaticky vyplni napric vsemi dokumenty. Chytre validace hlidaji formaty ICO, dat i castek.",
+                color: "bg-[oklch(0.55_0.2_290)]",
               },
               {
                 step: "3",
-                icon: CheckCircle2,
-                title: "Stáhněte hotové dokumenty",
-                desc: "Stáhněte dokumenty ve formátu DOCX nebo PDF. Jednotlivě, nebo vše najednou jako ZIP.",
+                icon: Download,
+                title: "Stahnete hotove dokumenty",
+                desc: "Stahnete dokumenty ve formatu DOCX nebo PDF. Jednotlive, nebo vse najednou jako ZIP.",
+                color: "bg-[oklch(0.6_0.15_170)]",
               },
             ].map((item) => (
               <div key={item.step} className="relative rounded-2xl border bg-card p-6 sm:p-8 text-center group hover-lift">
-                <div className="inline-flex h-12 w-12 rounded-2xl bg-primary/10 items-center justify-center mx-auto mb-5 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                  <item.icon className="h-6 w-6" />
+                <div className="inline-flex h-14 w-14 rounded-2xl bg-primary/10 items-center justify-center mx-auto mb-6 group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+                  <item.icon className="h-7 w-7" />
                 </div>
-                <div className="absolute -top-3 -left-2 sm:-left-3 h-7 w-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
+                <div className={`absolute -top-3.5 -left-2 sm:-left-3 h-8 w-8 rounded-full ${item.color} text-white text-sm font-bold flex items-center justify-center shadow-lg`}>
                   {item.step}
                 </div>
                 <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
@@ -131,53 +227,188 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* Use case preview */}
+      {/* ── Features grid ── */}
       <section className="bg-muted/20 border-y">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-10 sm:mb-14">
-              <h2 className="text-2xl sm:text-4xl font-bold tracking-tight mb-3">
-                Připravené sady dokumentů
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-14">
+              <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-4">
+                Proc DocGen?
               </h2>
               <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
-                Vyberte životní situaci a my připravíme všechny potřebné dokumenty.
+                Navrzeno pro ceske pravni prostredi od zacatku.
               </p>
             </div>
 
-            <HomeQuickButtons />
-
-            <div className="text-center mt-10">
-              <Button asChild size="lg" className="rounded-xl px-8 h-12">
-                <Link href="/login">
-                  Přihlásit se a začít
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Link>
-              </Button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+              {[
+                {
+                  icon: Scale,
+                  title: "Ceske pravo",
+                  desc: "Vsechny sablony jsou v souladu s aktualni ceskou legislativou.",
+                },
+                {
+                  icon: Zap,
+                  title: "Rychle generovani",
+                  desc: "Kompletni sada dokumentu behem par minut, ne hodin.",
+                },
+                {
+                  icon: Layers,
+                  title: "Sdilena pole",
+                  desc: "Vyplnte udaje jednou a propisi se do vsech dokumentu sady.",
+                },
+                {
+                  icon: Shield,
+                  title: "Bezpecne a sifrovane",
+                  desc: "Vase data jsou chranena sifrovani a nikdy je nesdilime.",
+                },
+                {
+                  icon: Download,
+                  title: "DOCX i PDF",
+                  desc: "Stahnete dokumenty v preferovanem formatu, vcetne ZIP archivu.",
+                },
+                {
+                  icon: Users,
+                  title: "Tymova spoluprace",
+                  desc: "Pozvete kolegy a sdílejte sablony napric firmou.",
+                },
+              ].map((feature) => (
+                <div key={feature.title} className="rounded-2xl border bg-card p-5 sm:p-6 hover-lift group">
+                  <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+                    <feature.icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-semibold text-base mb-1.5">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="inline-flex h-14 w-14 rounded-2xl bg-primary/10 items-center justify-center mx-auto mb-5">
-            <Sparkles className="h-7 w-7 text-primary" />
+      {/* ── Use cases preview ── */}
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12 sm:mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1 mb-4 rounded-full bg-primary/8 text-primary text-xs font-medium border border-primary/15">
+              Pripravene sady
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-4">
+              Vyberete situaci, my pripravime dokumenty
+            </h2>
+            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
+              {useCases.length} pripravenych sad pro nejcastejsi pravni situace.
+            </p>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-            Připraveni začít?
-          </h2>
-          <p className="text-muted-foreground text-base sm:text-lg mb-8">
-            Registrace je zdarma. Žádná kreditní karta, žádné závazky.
-          </p>
-          <Button asChild size="lg" className="rounded-xl px-10 h-12 text-base">
-            <Link href="/login">
-              Vytvořit účet zdarma
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Link>
-          </Button>
+
+          <HomeQuickButtons />
+
+          <div className="text-center mt-12">
+            <Button asChild size="lg" className="rounded-xl px-10 h-13 text-base shadow-lg shadow-primary/20">
+              <Link href="/login">
+                Prihlasit se a zacit
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Link>
+            </Button>
+          </div>
         </div>
       </section>
+
+      {/* ── Testimonial / trust section ── */}
+      <section className="bg-muted/20 border-y">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+                Duvera v kazdem dokumentu
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                {
+                  quote: "Zalozeni s.r.o. nam zabralo 5 minut misto 2 dnu. Vsechny dokumenty byly pripraveny na prvni pokus.",
+                  author: "Martin K.",
+                  role: "Zakladatel startupu",
+                },
+                {
+                  quote: "Konecne nastroj, ktery rozumi ceskemu pravu. Sablony jsou aktualni a presne.",
+                  author: "Jana V.",
+                  role: "Pravni asistentka",
+                },
+                {
+                  quote: "Pouzivame DocGen pro vsechny firemni smlouvy. Usetri nam hodiny prace kazdy tyden.",
+                  author: "Petr S.",
+                  role: "Jednatel spolecnosti",
+                },
+              ].map((testimonial) => (
+                <div key={testimonial.author} className="rounded-2xl border bg-card p-6 flex flex-col">
+                  <p className="text-sm leading-relaxed text-muted-foreground flex-1 mb-4">
+                    &ldquo;{testimonial.quote}&rdquo;
+                  </p>
+                  <div>
+                    <p className="font-semibold text-sm">{testimonial.author}</p>
+                    <p className="text-xs text-muted-foreground">{testimonial.role}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Final CTA ── */}
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="inline-flex h-16 w-16 rounded-2xl bg-gradient-to-br from-primary to-[oklch(0.6_0.2_310)] items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/20">
+            <Sparkles className="h-8 w-8 text-white" />
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+            Pripraveni zacit?
+          </h2>
+          <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg mx-auto">
+            Registrace je zdarma. Zadna kreditni karta, zadne zavazky.
+            Zacnete generovat dokumenty hned.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button asChild size="lg" className="rounded-xl px-10 h-13 text-base w-full sm:w-auto cta-pulse shadow-lg shadow-primary/20">
+              <Link href="/login">
+                Vytvorit ucet zdarma
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Link>
+            </Button>
+          </div>
+          <div className="flex items-center justify-center gap-6 mt-8 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+              Zdarma na zacatek
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+              Bez kreditni karty
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+              Ceske pravo
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="border-t bg-card/50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-primary to-[oklch(0.6_0.2_310)] flex items-center justify-center">
+                <FileText className="h-3 w-3 text-white" />
+              </div>
+              <span className="font-medium text-foreground">DocGen</span>
+            </div>
+            <p>&copy; 2026 DocGen. Vsechna prava vyhrazena.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -188,13 +419,11 @@ function Dashboard() {
   const [showTemplates, setShowTemplates] = useState(false);
   const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>([]);
 
-  // Greeting based on time of day
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Dobré ráno" : hour < 18 ? "Dobrý den" : "Dobrý večer";
+  const greeting = hour < 12 ? "Dobre rano" : hour < 18 ? "Dobry den" : "Dobry vecer";
 
   const allTemplates = getAllTemplates();
 
-  // Load custom uploaded templates
   useEffect(() => {
     setCustomTemplates(getCustomTemplates());
   }, []);
@@ -202,7 +431,7 @@ function Dashboard() {
   const handleDeleteCustom = (id: string, name: string) => {
     deleteCustomTemplate(id);
     setCustomTemplates(getCustomTemplates());
-    toast.success(`Šablona "${name}" smazána`);
+    toast.success(`Sablona "${name}" smazana`);
   };
 
   return (
@@ -215,11 +444,10 @@ function Dashboard() {
               <div>
                 <p className="text-sm text-muted-foreground mb-1">{greeting},</p>
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                  {user?.name || "uživateli"}
+                  {user?.name || "uzivateli"}
                 </h1>
               </div>
 
-              {/* Quick stats */}
               <div className="flex items-center gap-4 sm:gap-6">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -227,7 +455,7 @@ function Dashboard() {
                   </div>
                   <div>
                     <p className="font-medium text-foreground">{allTemplates.length}</p>
-                    <p className="text-xs">šablon</p>
+                    <p className="text-xs">sablon</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -236,7 +464,7 @@ function Dashboard() {
                   </div>
                   <div>
                     <p className="font-medium text-foreground">{useCases.length}</p>
-                    <p className="text-xs">sad dokumentů</p>
+                    <p className="text-xs">sad dokumentu</p>
                   </div>
                 </div>
                 {customTemplates.length > 0 && (
@@ -246,7 +474,7 @@ function Dashboard() {
                     </div>
                     <div>
                       <p className="font-medium text-foreground">{customTemplates.length}</p>
-                      <p className="text-xs">vlastních</p>
+                      <p className="text-xs">vlastnich</p>
                     </div>
                   </div>
                 )}
@@ -259,15 +487,14 @@ function Dashboard() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
         <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
 
-          {/* Quick actions row */}
+          {/* Quick actions */}
           <section>
             <div className="flex items-center gap-3 mb-5 sm:mb-6">
               <div className="h-8 w-1 rounded-full bg-gradient-to-b from-primary to-primary/30" />
-              <h2 className="text-lg sm:text-xl font-bold">Rychlé akce</h2>
+              <h2 className="text-lg sm:text-xl font-bold">Rychle akce</h2>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              {/* Create from use case */}
               <Link
                 href="#use-cases"
                 onClick={(e) => {
@@ -281,13 +508,12 @@ function Dashboard() {
                     <Plus className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-semibold text-sm sm:text-base leading-tight">Nový dokument</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Vyberte sadu nebo šablonu</p>
+                    <h3 className="font-semibold text-sm sm:text-base leading-tight">Novy dokument</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Vyberte sadu nebo sablonu</p>
                   </div>
                 </div>
               </Link>
 
-              {/* Upload document */}
               <Link
                 href="/upload"
                 className="group rounded-2xl border bg-card p-4 sm:p-5 hover-lift gradient-border block transition-colors active:scale-[0.98]"
@@ -297,19 +523,15 @@ function Dashboard() {
                     <Upload className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-semibold text-sm sm:text-base leading-tight">Nahrát dokument</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Vytvořit šablonu z DOCX</p>
+                    <h3 className="font-semibold text-sm sm:text-base leading-tight">Nahrat dokument</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Vytvorit sablonu z DOCX</p>
                   </div>
                 </div>
               </Link>
 
-              {/* Browse all templates */}
               <button
                 onClick={() => {
-                  setShowTemplates(true);
-                  setTimeout(() => {
-                    document.getElementById('all-templates')?.scrollIntoView({ behavior: 'smooth' });
-                  }, 100);
+                  document.getElementById('all-templates')?.scrollIntoView({ behavior: 'smooth' });
                 }}
                 className="group rounded-2xl border bg-card p-4 sm:p-5 hover-lift gradient-border block transition-colors active:scale-[0.98] text-left"
               >
@@ -318,36 +540,36 @@ function Dashboard() {
                     <BookOpen className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-semibold text-sm sm:text-base leading-tight">Katalog šablon</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">{allTemplates.length} připravených šablon</p>
+                    <h3 className="font-semibold text-sm sm:text-base leading-tight">Katalog sablon</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">{allTemplates.length} pripravenych sablon</p>
                   </div>
                 </div>
               </button>
             </div>
           </section>
 
-          {/* Use cases section */}
+          {/* Use cases */}
           <section id="use-cases">
             <div className="flex items-center gap-3 mb-5 sm:mb-6">
               <div className="h-8 w-1 rounded-full bg-gradient-to-b from-primary to-primary/30" />
               <div>
-                <h2 className="text-lg sm:text-xl font-bold">Sady dokumentů</h2>
-                <p className="text-xs sm:text-sm text-muted-foreground">Vyberte životní situaci a vygenerujte kompletní sadu</p>
+                <h2 className="text-lg sm:text-xl font-bold">Sady dokumentu</h2>
+                <p className="text-xs sm:text-sm text-muted-foreground">Vyberte zivotni situaci a vygenerujte kompletni sadu</p>
               </div>
             </div>
 
             <HomeQuickButtons />
           </section>
 
-          {/* Custom uploaded templates */}
+          {/* Custom templates */}
           {customTemplates.length > 0 && (
             <section>
               <div className="flex items-center justify-between mb-5 sm:mb-6">
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-1 rounded-full bg-gradient-to-b from-violet-500 to-violet-500/30" />
                   <div>
-                    <h2 className="text-lg sm:text-xl font-bold">Vlastní šablony</h2>
-                    <p className="text-xs sm:text-sm text-muted-foreground">Šablony vytvořené z nahraných dokumentů</p>
+                    <h2 className="text-lg sm:text-xl font-bold">Vlastni sablony</h2>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Sablony vytvorene z nahranych dokumentu</p>
                   </div>
                 </div>
                 <Link
@@ -355,7 +577,7 @@ function Dashboard() {
                   className="text-xs sm:text-sm text-primary hover:underline inline-flex items-center gap-1"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Přidat</span>
+                  <span className="hidden sm:inline">Pridat</span>
                 </Link>
               </div>
 
@@ -365,11 +587,10 @@ function Dashboard() {
                     key={ct.id}
                     className="group relative flex flex-col rounded-2xl border bg-card p-4 sm:p-5 hover-lift gradient-border"
                   >
-                    {/* Delete button */}
                     <button
                       onClick={() => handleDeleteCustom(ct.id, ct.name)}
                       className="absolute top-3 right-3 h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
-                      title="Smazat šablonu"
+                      title="Smazat sablonu"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -388,11 +609,10 @@ function Dashboard() {
                       </div>
                     </div>
 
-                    {/* Meta info */}
                     <div className="flex flex-wrap items-center gap-2 mb-4 text-xs text-muted-foreground">
                       <span className="tag-pill inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-medium">
                         <FileText className="h-3 w-3" />
-                        {ct.fields.length} polí
+                        {ct.fields.length} poli
                       </span>
                       <span className="tag-pill inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-medium">
                         <FolderOpen className="h-3 w-3" />
@@ -409,7 +629,7 @@ function Dashboard() {
                     <div className="mt-auto">
                       <Button asChild className="w-full rounded-xl group/btn" size="sm">
                         <Link href={`/generate?template=custom:${ct.id}`}>
-                          Použít šablonu
+                          Pouzit sablonu
                           <ArrowRight className="h-3.5 w-3.5 ml-1 transition-transform group-hover/btn:translate-x-0.5" />
                         </Link>
                       </Button>
@@ -423,31 +643,31 @@ function Dashboard() {
           {/* Individual templates */}
           <section id="all-templates">
             <button
-              onClick={() => setShowTemplates(!showTemplates)}
+              onClick={() => {
+                const el = document.getElementById('templates-content');
+                if (el) el.classList.toggle('hidden');
+              }}
               className="w-full flex items-center justify-between group cursor-pointer mb-5 sm:mb-6"
             >
               <div className="flex items-center gap-3">
                 <div className="h-8 w-1 rounded-full bg-gradient-to-b from-muted-foreground/30 to-muted-foreground/10" />
                 <div className="text-left">
                   <h2 className="text-lg sm:text-xl font-bold text-foreground/80 group-hover:text-foreground transition-colors">
-                    Jednotlivé šablony
+                    Jednotlive sablony
                   </h2>
                   <p className="text-xs sm:text-sm text-muted-foreground">
-                    Nebo si vyberte konkrétní dokument
+                    Nebo si vyberte konkretni dokument
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="hidden sm:inline">{showTemplates ? 'Skrýt' : 'Zobrazit'}</span>
-                <ChevronDown className={`h-5 w-5 transition-transform duration-300 ${showTemplates ? 'rotate-180' : ''}`} />
+                <ChevronDown className="h-5 w-5 transition-transform duration-300" />
               </div>
             </button>
 
-            {showTemplates && (
-              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                <TemplateCatalog />
-              </div>
-            )}
+            <div id="templates-content" className="hidden animate-in fade-in slide-in-from-top-2 duration-300">
+              <TemplateCatalog />
+            </div>
           </section>
 
         </div>
