@@ -52,7 +52,7 @@ function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button asChild size="lg" className="rounded-full px-8 h-12 text-base bg-white text-black hover:bg-white/90 font-medium">
+              <Button asChild size="lg" className="rounded-full px-8 h-12 text-base bg-primary text-primary-foreground hover:bg-primary/90 font-medium">
                 <Link href="/login">
                   Začít zdarma
                   <ArrowRight className="h-4 w-4 ml-2" />
@@ -180,7 +180,7 @@ function LandingPage() {
           </div>
 
           <div className="text-center mt-14">
-            <Button asChild size="lg" className="rounded-full px-8 h-12 text-base bg-white text-black hover:bg-white/90 font-medium">
+            <Button asChild size="lg" className="rounded-full px-8 h-12 text-base bg-primary text-primary-foreground hover:bg-primary/90 font-medium">
               <Link href="/login">
                 Přihlásit se a začít
                 <ArrowRight className="h-4 w-4 ml-2" />
