@@ -11,7 +11,9 @@ interface DocumentSetState {
   deleteSet: (id: string) => void;
   addTemplateToSet: (setId: string, templateId: string) => void;
   removeTemplateFromSet: (setId: string, templateId: string) => void;
+  toggleStar: (id: string) => void;
   getById: (id: string) => DocumentSet | undefined;
+  getStarred: () => DocumentSet[];
 }
 
 export const useDocumentSetStore = create<DocumentSetState>()(
@@ -26,6 +28,7 @@ export const useDocumentSetStore = create<DocumentSetState>()(
           name,
           description,
           templateIds: [],
+          isStarred: false,
           createdAt: now,
           updatedAt: now,
         };
@@ -65,7 +68,16 @@ export const useDocumentSetStore = create<DocumentSetState>()(
         }));
       },
 
+      toggleStar: (id) => {
+        set((state) => ({
+          sets: state.sets.map((s) =>
+            s.id === id ? { ...s, isStarred: !s.isStarred, updatedAt: new Date().toISOString() } : s
+          ),
+        }));
+      },
+
       getById: (id) => get().sets.find((s) => s.id === id),
+      getStarred: () => get().sets.filter((s) => s.isStarred),
     }),
     { name: "document-sets-storage" }
   )

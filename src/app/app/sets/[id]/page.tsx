@@ -12,11 +12,12 @@ import {
   Pencil, X, Check, Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { StarButton } from '@/components/star-button';
 
 export default function DocumentSetDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { sets, updateSet, deleteSet, addTemplateToSet, removeTemplateFromSet } = useDocumentSetStore();
+  const { sets, updateSet, deleteSet, addTemplateToSet, removeTemplateFromSet, toggleStar } = useDocumentSetStore();
   const [isClient, setIsClient] = useState(false);
   const [adding, setAdding] = useState(false);
   const [search, setSearch] = useState('');
@@ -124,6 +125,7 @@ export default function DocumentSetDetailPage({ params }: { params: Promise<{ id
             ) : (
               <>
                 <h1 className="text-xl font-semibold">{docSet.name}</h1>
+                <StarButton starred={!!docSet.isStarred} onToggle={() => toggleStar(docSet.id)} size="md" />
                 <Button
                   size="icon"
                   variant="ghost"

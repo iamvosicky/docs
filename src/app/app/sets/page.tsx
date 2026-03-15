@@ -11,9 +11,10 @@ import {
   ArrowRight, X, Search, Upload, Check
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { StarButton } from '@/components/star-button';
 
 export default function DocumentSetsPage() {
-  const { sets, addSet, deleteSet, updateSet, addTemplateToSet } = useDocumentSetStore();
+  const { sets, addSet, deleteSet, updateSet, addTemplateToSet, toggleStar } = useDocumentSetStore();
   const [creating, setCreating] = useState(false);
   const [createStep, setCreateStep] = useState<'name' | 'documents'>('name');
   const [newName, setNewName] = useState('');
@@ -294,6 +295,8 @@ export default function DocumentSetsPage() {
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0 relative">
+                  <StarButton starred={!!docSet.isStarred} onToggle={() => toggleStar(docSet.id)} />
+
                   {docSet.templateIds.length > 0 && (
                     <Link href={`/app/generate?template=${docSet.templateIds.join(',')}`}>
                       <Button variant="ghost" size="sm" className="rounded-xl text-xs gap-1 text-muted-foreground hover:text-primary">
