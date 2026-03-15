@@ -97,13 +97,31 @@ const PATTERNS: PatternRule[] = [
 const PSC_PATTERN = /(?:PSČ)[:\s]*(\d{3}\s?\d{2})\b/gi;
 
 // Company name: match the legal suffix, then look back to find the actual company name start
-const COMPANY_SUFFIX = /(?:s\.r\.o\.|a\.s\.|k\.s\.|v\.o\.s\.|z\.s\.|spol\.\s*s\s*r\.o\.|SE|akciová společnost|společnost s ručením omezeným)/;
+const COMPANY_SUFFIX = /(?:s\.r\.o\.|a\.s\.|k\.s\.|v\.o\.s\.|z\.s\.|spol\.\s*s\s*r\.o\.|akciová společnost|společnost s ručením omezeným)/;
 
 const PERSON_NAME_PATTERN = /(?:(?:pan[íu]?|panem|jméno|zastoupen[áý]?m?)\s+)?([A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+\s+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+(?:\s+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+)?)/g;
 
-// Full-span address: capture everything after the keyword up to end of address (including PSČ)
+// Czech legal trigger phrases for address detection
+const ADDRESS_TRIGGER = "(?:se\\s+sídlem\\s+na\\s+adrese|se\\s+sídlem\\s+v|se\\s+sídlem|s\\s+bydlištěm|trvale\\s+bytem|s\\s+místem\\s+podnikání|bytem|bydliště|adresa)";
+
+// Full-span address: capture everything after the trigger phrase up to end of address (including PSČ)
+// Handles: street + number, č.p. forms, city + PSČ, district, country
 // Important: [^\n] instead of \s to prevent matching across line breaks
-const ADDRESS_PATTERN = /(?:(?:se sídlem|bytem|bydliště|adresa|trvale bytem|na adrese)[:\s]+)([A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽa-záčďéěíňóřšťúůýž ]+\d+[\w/]*(?:,\s*[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽa-záčďéěíňóřšťúůýž \d-]+)*(?:,\s*\d{3}\s?\d{2}(?:\s+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽa-záčďéěíňóřšťúůýž]+)?)?)/gi;
+const ADDRESS_PATTERN = new RegExp(
+  `(?:${ADDRESS_TRIGGER})[:\\s]+` +
+  // Capture the address itself:
+  `(` +
+    // Start: either "č.p." form or a street/city name
+    `(?:č\\.\\s*p\\.\\s*\\d+|[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽa-záčďéěíňóřšťúůýž]+(?:\\s+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽa-záčďéěíňóřšťúůýž]+)*)` +
+    // Optional house/orientation number
+    `(?:\\s+\\d+[\\w/]*)?` +
+    // Continuation segments: comma-separated parts (city, district, etc.)
+    `(?:,\\s*(?:č\\.\\s*p\\.\\s*\\d+|[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽa-záčďéěíňóřšťúůýž0-9][A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽa-záčďéěíňóřšťúůýž \\d\\/-]*))*` +
+    // Optional final PSČ + city
+    `(?:,?\\s*\\d{3}\\s?\\d{2}(?:\\s+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽa-záčďéěíňóřšťúůýž]+(?:\\s+\\d+)?)?)` +
+  `)`,
+  "gi"
+);
 
 const EMAIL_PATTERN = /\b([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/g;
 
@@ -232,10 +250,12 @@ const ROLE_MAP: { pattern: RegExp; role: string }[] = [
   { pattern: /(?:jednatel|statutární|ředitel|předseda)/, role: "representative" },
   { pattern: /(?:správce\s*vkladu)/, role: "administrator" },
   { pattern: /(?:akcionář|společník|vlastník)/, role: "shareholder" },
+  { pattern: /(?:právnická\s*osoba)/, role: "company" },
 ];
 
 /** Detect the entity role from context text preceding the match.
- *  Finds the CLOSEST (most recent) role keyword to get accurate assignment. */
+ *  Finds the CLOSEST (most recent) role keyword to get accurate assignment.
+ *  Falls back to "company" if IČO/IČ or legal suffix is nearby but no explicit role found. */
 function detectRole(textBefore: string): string {
   const lower = textBefore.toLowerCase();
   const context = lower.slice(-500);
@@ -254,6 +274,15 @@ function detectRole(textBefore: string): string {
       }
     }
   }
+
+  // If no explicit role found, check for company indicators (IČO, legal suffix)
+  if (!bestRole) {
+    const nearContext = lower.slice(-200);
+    if (/(?:ič[o]?|ico|identifikační\s+číslo|s\.r\.o\.|a\.s\.|k\.s\.|v\.o\.s\.|spol\.\s*s\s*r\.o\.|se|akciová společnost)/.test(nearContext)) {
+      bestRole = "company";
+    }
+  }
+
   return bestRole;
 }
 
@@ -273,6 +302,7 @@ function roleToLabel(role: string): string {
     representative: "Zástupce",
     administrator: "Správce vkladu",
     shareholder: "Akcionář",
+    company: "Společnost",
   };
   return map[role] || role;
 }
@@ -756,6 +786,63 @@ export function analyzeDocx(arrayBuffer: ArrayBuffer): AnalysisResult {
   }
 
   return { templateText, fields, groups, entities, optionalSections, notes, originalText: text, templateDocxBase64 };
+}
+
+/**
+ * Reprocess an already-generated template text.
+ * Scans for any remaining literal entities (addresses, names, IČO, etc.)
+ * that were missed in the first pass and replaces them with placeholders.
+ *
+ * Existing {{placeholder}} tokens are preserved — only literal values are replaced.
+ */
+export function reprocessTemplate(templateText: string): AnalysisResult {
+  // Strip existing placeholders temporarily so patterns don't match inside them.
+  // We replace {{...}} with a unique token, run detection, then restore.
+  const placeholderTokens: { token: string; original: string }[] = [];
+  let safeText = templateText;
+  const placeholderRegex = /\{\{[^}]+\}\}/g;
+  let idx = 0;
+  safeText = safeText.replace(placeholderRegex, (match) => {
+    const token = `__PH${idx++}__`;
+    placeholderTokens.push({ token, original: match });
+    return token;
+  });
+
+  // Run standard detection on the text with placeholders removed
+  const { replacements, entities, notes, optionalSections } = detectReplacements(safeText);
+
+  // Apply new replacements
+  let result = safeText;
+  const fields: DetectedField[] = [];
+
+  for (const r of replacements) {
+    const escaped = r.original.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    result = result.replace(new RegExp(escaped, "g"), r.placeholder);
+    fields.push(r.field);
+  }
+
+  // Restore original placeholders
+  for (const { token, original } of placeholderTokens) {
+    result = result.replace(new RegExp(token, "g"), original);
+  }
+
+  const groups = [...new Set(fields.map((f) => f.group))];
+
+  if (fields.length > 0) {
+    notes.push(`Reprocessing nalezlo ${fields.length} dalších polí k nahrazení.`);
+  } else {
+    notes.push("Reprocessing nenalezlo žádné zbývající literální hodnoty.");
+  }
+
+  return {
+    templateText: result,
+    fields,
+    groups,
+    entities,
+    optionalSections,
+    notes,
+    originalText: templateText,
+  };
 }
 
 /** Convert analysis result to a template-schemas.ts compatible schema */
