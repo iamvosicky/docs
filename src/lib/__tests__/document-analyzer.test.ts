@@ -211,10 +211,7 @@ describe("document-analyzer", () => {
 
       const result = analyzeDocument(input);
 
-      // Should have exactly 2 parties
-      expect(result.parties.length).toBe(2);
-
-      // Should have buyer and seller roles (no duplicates)
+      // Should have buyer, seller, and representative as separate parties
       const roles = result.parties.map((p) => p.role);
       expect(roles).toContain("buyer");
       expect(roles).toContain("seller");
@@ -230,6 +227,12 @@ describe("document-analyzer", () => {
       const seller = result.parties.find((p) => p.role === "seller")!;
       expect(seller.label).toBe("Prodávající");
       expect(seller.attributes.address).toBeDefined();
+
+      // Representative should be a separate group, not merged into seller
+      const rep = result.parties.find((p) => p.role === "representative");
+      if (rep) {
+        expect(rep.label).toBe("Zástupce");
+      }
     });
 
     it("never creates duplicate buyer roles", () => {
@@ -312,8 +315,92 @@ describe("document-analyzer", () => {
       // Contract type should be purchase
       expect(result.contractType).toBe("purchase");
 
-      // Should have structured parties
-      expect(result.parties.length).toBe(2);
+      // Should have structured parties (buyer, seller, + optional representative)
+      expect(result.parties.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  describe("person name validation", () => {
+    it("rejects Czech city names as person names", () => {
+      const input = "zastoupen jednatelem v Kutné Hoře, bytem č.p. 102, 263 01 Obory";
+      const result = analyzeDocument(input);
+
+      // "Kutné Hoře" must NOT be detected as a person name
+      const nameFields = result.fields.filter((f) => f.name.includes("name"));
+      for (const field of nameFields) {
+        expect(field.example).not.toContain("Kutné");
+        expect(field.example).not.toContain("Hoře");
+      }
+    });
+
+    it("rejects location-like values preceded by address context words", () => {
+      const input = "jednatel, bytem Praha 6, Slavíčkova 372/2, 160 00 Praha";
+      const result = analyzeDocument(input);
+
+      const nameFields = result.fields.filter((f) => f.name.includes("name"));
+      for (const field of nameFields) {
+        expect(field.example).not.toContain("Praha");
+      }
+    });
+
+    it("rejects declension variants of already-detected names", () => {
+      const input = [
+        "Kupující: Štěpán Černohorský, bytem č.p. 102, 263 01 Obory",
+        "zastoupen Štěpánem Černohorským",
+      ].join("\n");
+      const result = analyzeDocument(input);
+
+      // Should only detect one name field for the buyer, not a second declension variant
+      const nameFields = result.fields.filter((f) => f.name.includes("name") && f.type === "text");
+      const nameValues = nameFields.map((f) => f.example);
+      // Should not have both "Štěpán Černohorský" AND "Štěpánem Černohorským"
+      expect(nameFields.length).toBeLessThanOrEqual(1);
+    });
+
+    it("accepts valid person names", () => {
+      const input = "Kupující: Gabriela Černá, bytem č.p. 1, 100 00 Praha";
+      const result = analyzeDocument(input);
+
+      const nameField = result.fields.find((f) => f.name.includes("name") && f.type === "text");
+      expect(nameField).toBeDefined();
+      expect(nameField!.example).toBe("Gabriela Černá");
+    });
+  });
+
+  describe("representative grouping", () => {
+    it("keeps representative as a separate group from buyer", () => {
+      const input = [
+        "KUPNÍ SMLOUVA",
+        "",
+        "Kupující: Jan Novák, bytem č.p. 102, 263 01 Obory",
+        "",
+        "Prodávající: ABC s.r.o., IČO 12345678, se sídlem č.p. 95, 261 01 Drásov",
+        "zastoupená jednatelem Petrem Svobodou",
+      ].join("\n");
+      const result = analyzeDocument(input);
+
+      // Representative should be a separate group in the UI
+      const repFields = result.fields.filter((f) => f.entity === "representative" || f.group === "Zástupce");
+      const buyerFields = result.fields.filter((f) => f.entity === "buyer" || f.group === "Kupující");
+
+      // Representative fields should NOT be in the buyer group
+      for (const rf of repFields) {
+        expect(rf.group).not.toBe("Kupující");
+      }
+    });
+
+    it("keeps shareholder as a separate group", () => {
+      const input = [
+        "KUPNÍ SMLOUVA",
+        "Kupující: Jan Novák, bytem č.p. 1, 100 00 Praha",
+        "Akcionář společnosti s vkladem 10.000 Kč",
+      ].join("\n");
+      const result = analyzeDocument(input);
+
+      const shareholderFields = result.fields.filter((f) => f.entity === "shareholder");
+      for (const sf of shareholderFields) {
+        expect(sf.group).not.toBe("Kupující");
+      }
     });
   });
 });

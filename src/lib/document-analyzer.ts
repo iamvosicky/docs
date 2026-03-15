@@ -140,6 +140,111 @@ const COMPANY_SUFFIX = /(?:s\.r\.o\.|a\.s\.|k\.s\.|v\.o\.s\.|z\.s\.|spol\.\s*s\s
 // Person name must match on a single line (use [^\S\n] instead of \s to avoid matching across newlines)
 const PERSON_NAME_PATTERN = /(?:(?:pan[íu]?|panem|jméno|zastoupen[áý]?m?)[^\S\n]+)?([A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+[^\S\n]+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+(?:[^\S\n]+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+)?)/g;
 
+/**
+ * Validate that a value looks like a real person name, not a location/address.
+ *
+ * Rejects:
+ * - Known Czech city/town names and their grammatical forms
+ * - Values preceded by address/location trigger words (v, ve, na, bytem, sídlem, etc.)
+ * - Values containing address-like patterns (č.p., postal codes, numbers)
+ * - Values that end in typical Czech location suffixes (-ově, -oře, -icích, etc.)
+ */
+function isLikelyPersonName(value: string, textBefore: string): boolean {
+  const lower = value.toLowerCase();
+  const words = value.split(/\s+/);
+
+  // Must have at least 2 words
+  if (words.length < 2) return false;
+
+  // Reject if any word looks like a number, postal code, or address fragment
+  if (/\d/.test(value)) return false;
+  if (/č\.?\s*p\.?/i.test(value)) return false;
+
+  // Reject known Czech cities/towns and their grammatical forms
+  const locationPatterns = [
+    // Common Czech location suffixes (locative/dative/genitive case endings)
+    /(?:hoře|horách|horám)$/i,                  // Kutné Hoře
+    /(?:brodě|brodů|brodu)$/i,                  // Havlíčkově Brodě
+    /(?:varech|varů|vary)$/i,                   // Karlovy Vary
+    /(?:lázních|lázně|lázni)$/i,                // Mariánské Lázně
+    /(?:labem|labi|labe)$/i,                    // Ústí nad Labem
+    /(?:moravě|morav[ěy])$/i,                   // Uherské Hradiště, etc.
+  ];
+  if (locationPatterns.some(p => p.test(lower))) return false;
+
+  // Reject well-known Czech city names (all grammatical cases)
+  const knownLocations = new Set([
+    "praha", "praze", "prahy", "prahou", "prahu",
+    "brno", "brně", "brna", "brnem", "brnu",
+    "ostrava", "ostravě", "ostravy", "ostravou", "ostravu",
+    "plzeň", "plzni", "plzně", "plzní",
+    "olomouc", "olomouci", "olomouce",
+    "liberec", "liberci", "liberce",
+    "hradec", "hradci", "hradce",
+    "pardubice", "pardubicích", "pardubic",
+    "zlín", "zlíně", "zlínu", "zlína",
+    "opava", "opavě", "opavy",
+    "jihlava", "jihlavě", "jihlavy",
+    "kladno", "kladně", "kladna",
+    "teplice", "teplicích", "teplic",
+    "karviná", "karviné", "karvinou",
+    "prostějov", "prostějově", "prostějova",
+    "přerov", "přerově", "přerova",
+    "chomutov", "chomutově", "chomutova",
+    "děčín", "děčíně", "děčína",
+    "kutná", "kutné", "kutnou",  // Kutná Hora
+  ]);
+  // Check if any word in the value is a known location
+  if (words.some(w => knownLocations.has(w.toLowerCase()))) return false;
+
+  // Reject if preceded by address/location trigger words
+  const before50 = textBefore.slice(-50).toLowerCase();
+  if (/(?:\bv\s*$|\bve\s*$|\bna\s*$|\bu\s*$|\bblíž\s*$|\bobci\s*$|\bobce\s*$|\bměst[ěa]\s*$|\bměstu\s*$|\bkraj[ie]\s*$|\bokres[eu]?\s*$|\bkatastr[áa]ln)/.test(before50)) return false;
+
+  // Reject if preceded by "bytem", "sídlem", "bydlištěm" (address context)
+  if (/(?:bytem|sídlem|bydlištěm|adrese|adresa|místem)\s*$/.test(before50)) return false;
+
+  // Reject values where a word ends in typical Czech location case suffixes
+  // that are uncommon in surnames: -ově, -icích, -ách, -ech
+  if (/(?:ově|icích|ách|ech)$/i.test(lower)) return false;
+
+  return true;
+}
+
+/**
+ * Check if a name is likely a grammatical case variant of an already-detected name.
+ * Czech names decline: "Jan Novák" / "Jana Nováka" / "Janem Novákem"
+ * We compare stems (first 3+ chars) to catch these.
+ *
+ * Also handles 3-word vs 2-word comparisons:
+ * "Sepsáno Štěpánem Černohorským" contains "Štěpán Černohorský" as a declension variant.
+ */
+function isDeclensionVariant(newName: string, existingNames: string[]): boolean {
+  const newWords = newName.split(/\s+/);
+  if (newWords.length < 2) return false;
+
+  for (const existing of existingNames) {
+    const existWords = existing.split(/\s+/);
+    if (existWords.length < 2) continue;
+
+    // Try all 2-word subsequences of the new name against the existing name
+    for (let offset = 0; offset <= newWords.length - 2; offset++) {
+      const w1 = newWords[offset];
+      const w2 = newWords[offset + 1];
+
+      const firstStem = Math.min(w1.length, existWords[0].length, 4);
+      const lastStem = Math.min(w2.length, existWords[existWords.length - 1].length, 4);
+
+      if (firstStem >= 3 && lastStem >= 3 &&
+          w1.slice(0, firstStem).toLowerCase() === existWords[0].slice(0, firstStem).toLowerCase() &&
+          w2.slice(0, lastStem).toLowerCase() === existWords[existWords.length - 1].slice(0, lastStem).toLowerCase()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 // Czech legal trigger phrases for address detection
 const ADDRESS_TRIGGER = "(?:se\\s+sídlem\\s+na\\s+adrese|se\\s+sídlem\\s+v|se\\s+sídlem|s\\s+bydlištěm|trvale\\s+bytem|s\\s+místem\\s+podnikání|bytem|bydliště|adresa)";
 
@@ -326,7 +431,7 @@ function detectRole(textBefore: string): string {
   // introduced after the role keyword, making the role keyword stale.
   // If the company suffix is on the SAME line as the role keyword (e.g.
   // "Prodávající: Firma ABC s.r.o."), the explicit role label should win.
-  if (bestRole && bestRole !== "company" && bestRole !== "representative") {
+  if (bestRole && bestRole !== "company") {
     const afterKeyword = context.slice(bestPos);
     const suffixRegex = new RegExp(COMPANY_SUFFIX_DETECT.source, "gi");
     let suffixMatch: RegExpExecArray | null;
@@ -627,7 +732,9 @@ function detectReplacements(text: string): {
   }
 
   // 1d. Person names (full name as one field)
+  // Track detected names to reject declension variants (e.g. "Janem Novákem" when "Jan Novák" exists)
   {
+    const detectedNames: string[] = [];
     let match: RegExpExecArray | null;
     const regex = new RegExp(PERSON_NAME_PATTERN.source, PERSON_NAME_PATTERN.flags);
     while ((match = regex.exec(text)) !== null) {
@@ -663,6 +770,15 @@ function detectReplacements(text: string): {
         "Celková", "Celkem", "Částka",
         "Sjednaná", "Dohodnutá", "Stanovená",
         "Záloha", "Splátka", "Faktura",
+        // Document action words that appear as capitalized first words
+        "Sepsáno", "Podepsáno", "Ověřeno", "Schváleno", "Vyhotoveno",
+        "Uzavřeno", "Dohodnuto", "Potvrzeno", "Zpracováno",
+        // Common location / registry words
+        "Zapsáno", "Zapsán", "Zapsaná", "Zapsaný", "Zapsané",
+        "Rejstříku", "Rejstříkem", "Rejstřík",
+        "Vedený", "Vedeném", "Vedená", "Vedené",
+        "Městského", "Městským", "Městském",
+        "Obvodního", "Obvodním", "Obvodní",
       ];
       // Check if any word in the match is a skip word
       const words = value.split(/\s+/);
@@ -672,21 +788,28 @@ function detectReplacements(text: string): {
       const uniqueWords = new Set(words.map(w => w.toLowerCase()));
       if (uniqueWords.size < words.length) continue;
 
+      // ── PERSON NAME VALIDATION ──
+      // Reject values that look like locations, addresses, or non-name entities
+      const textBefore = text.slice(0, match.index);
+      if (!isLikelyPersonName(value, textBefore)) continue;
+
+      // Reject declension variants of already-detected names
+      // e.g. "Štěpánem Černohorským" when "Štěpán Černohorský" already detected
+      if (isDeclensionVariant(value, detectedNames)) continue;
+
       // Reject 3-word matches if the first or last word duplicates part of an already-detected name
       if (words.length === 3) {
         const twoWordCombo1 = `${words[0]} ${words[1]}`;
         const twoWordCombo2 = `${words[1]} ${words[2]}`;
-        // Prefer the 2-word version if it also appears in the text independently
         const combo1Count = countOccurrences(text, twoWordCombo1);
         const combo2Count = countOccurrences(text, twoWordCombo2);
-        // If one combo appears much more than the 3-word version, skip the 3-word match
         const fullCount = countOccurrences(text, value);
         if (fullCount <= 1 && (combo1Count > fullCount || combo2Count > fullCount)) continue;
       }
 
-      const textBefore = text.slice(0, match.index);
       const role = detectRole(textBefore);
       addReplacement(value, role, "name", "text", "Jméno a příjmení", "Osobní údaje", "Celé jméno osoby", true);
+      detectedNames.push(value);
     }
   }
 
@@ -882,8 +1005,9 @@ function detectReplacements(text: string): {
 
   // ── Merge auxiliary roles into main contract parties ──
 
-  // Roles that should be merged into the nearest main party, not standalone
-  const AUXILIARY_ROLES = new Set(["representative", "administrator", "shareholder"]);
+  // Only "company" gets merged — representative, shareholder, administrator
+  // stay as separate groups for clearer UI categorization.
+  const MERGE_INTO_PARENT = new Set<string>(["company"]);
 
   const expectedPair = CONTRACT_ROLE_PAIRS[contractType];
 
@@ -916,41 +1040,8 @@ function detectReplacements(text: string): {
     partyMap.delete("company");
   }
 
-  // 2. Merge auxiliary roles (representative, administrator, etc.) into the
-  //    most recent main party that appears before them in the field order.
-  //    In a typical contract, "zastoupená jednatelem X" belongs to the preceding party.
-  for (const auxRole of AUXILIARY_ROLES) {
-    if (!partyMap.has(auxRole)) continue;
-    const auxParty = partyMap.get(auxRole)!;
-
-    // Find the best main party to merge into: prefer the second party in a pair
-    // (representative usually follows seller/company), or fall back to the last main party
-    let mergeTarget: string | null = null;
-    if (expectedPair) {
-      // Prefer role2 (seller/landlord/etc.) since representatives usually follow them
-      if (partyMap.has(expectedPair[1])) mergeTarget = expectedPair[1];
-      else if (partyMap.has(expectedPair[0])) mergeTarget = expectedPair[0];
-    }
-    // Fall back to any non-auxiliary party
-    if (!mergeTarget) {
-      for (const [role] of partyMap.entries()) {
-        if (!AUXILIARY_ROLES.has(role) && role !== auxRole) {
-          mergeTarget = role;
-        }
-      }
-    }
-
-    if (mergeTarget && partyMap.has(mergeTarget)) {
-      const target = partyMap.get(mergeTarget)!;
-      target.fieldNames.push(...auxParty.fieldNames);
-      for (const [k, v] of Object.entries(auxParty.attributes)) {
-        // Store representative name as a distinct attribute
-        const attrKey = k === "name" ? "representativeName" : k;
-        if (v && !target.attributes[attrKey]) target.attributes[attrKey] = v;
-      }
-      partyMap.delete(auxRole);
-    }
-  }
+  // Representative, shareholder, administrator are kept as separate parties
+  // for clearer UI grouping — they are NOT merged into parent parties.
 
   const parties = Array.from(partyMap.values());
 
