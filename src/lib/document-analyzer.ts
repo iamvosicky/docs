@@ -137,7 +137,8 @@ const PSC_PATTERN = /(?:PSČ)[:\s]*(\d{3}\s?\d{2})\b/gi;
 // Company name: match the legal suffix, then look back to find the actual company name start
 const COMPANY_SUFFIX = /(?:s\.r\.o\.|a\.s\.|k\.s\.|v\.o\.s\.|z\.s\.|spol\.\s*s\s*r\.o\.|akciová společnost|společnost s ručením omezeným)/;
 
-const PERSON_NAME_PATTERN = /(?:(?:pan[íu]?|panem|jméno|zastoupen[áý]?m?)\s+)?([A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+\s+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+(?:\s+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+)?)/g;
+// Person name must match on a single line (use [^\S\n] instead of \s to avoid matching across newlines)
+const PERSON_NAME_PATTERN = /(?:(?:pan[íu]?|panem|jméno|zastoupen[áý]?m?)[^\S\n]+)?([A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+[^\S\n]+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+(?:[^\S\n]+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+)?)/g;
 
 // Czech legal trigger phrases for address detection
 const ADDRESS_TRIGGER = "(?:se\\s+sídlem\\s+na\\s+adrese|se\\s+sídlem\\s+v|se\\s+sídlem|s\\s+bydlištěm|trvale\\s+bytem|s\\s+místem\\s+podnikání|bytem|bydliště|adresa)";
@@ -291,9 +292,17 @@ const ROLE_MAP: { pattern: RegExp; role: string }[] = [
   { pattern: /(?:právnická\s*osoba)/, role: "company" },
 ];
 
+/** Company legal suffix pattern for entity boundary detection */
+const COMPANY_SUFFIX_DETECT = /(?:s\.r\.o\.|a\.s\.|k\.s\.|v\.o\.s\.|z\.s\.|spol\.\s*s\s*r\.o\.|akciová\s+společnost|společnost\s+s\s+ručením\s+omezeným)/gi;
+
 /** Detect the entity role from context text preceding the match.
  *  Finds the CLOSEST (most recent) role keyword to get accurate assignment.
- *  Falls back to "company" if IČO/IČ or legal suffix is nearby but no explicit role found. */
+ *
+ *  KEY RULE: If a company legal suffix (a.s., s.r.o., etc.) appears AFTER the
+ *  last role keyword, it means a new company entity was introduced. In that case,
+ *  return "company" instead of the stale role keyword from further back.
+ *  This prevents assigning a company's address to "buyer" just because "kupující"
+ *  appeared earlier in the document. */
 function detectRole(textBefore: string): string {
   const lower = textBefore.toLowerCase();
   const context = lower.slice(-500);
@@ -302,7 +311,6 @@ function detectRole(textBefore: string): string {
   let bestPos = -1;
 
   for (const { pattern, role } of ROLE_MAP) {
-    // Find the last occurrence of this role keyword in context
     const regex = new RegExp(pattern.source, "gi");
     let m: RegExpExecArray | null;
     while ((m = regex.exec(context)) !== null) {
@@ -313,10 +321,38 @@ function detectRole(textBefore: string): string {
     }
   }
 
+  // Check if a company legal suffix appears AFTER the best role keyword
+  // AND on a DIFFERENT line/paragraph. This means a new company entity was
+  // introduced after the role keyword, making the role keyword stale.
+  // If the company suffix is on the SAME line as the role keyword (e.g.
+  // "Prodávající: Firma ABC s.r.o."), the explicit role label should win.
+  if (bestRole && bestRole !== "company" && bestRole !== "representative") {
+    const afterKeyword = context.slice(bestPos);
+    const suffixRegex = new RegExp(COMPANY_SUFFIX_DETECT.source, "gi");
+    let suffixMatch: RegExpExecArray | null;
+    let lastSuffixPos = -1;
+    while ((suffixMatch = suffixRegex.exec(afterKeyword)) !== null) {
+      lastSuffixPos = suffixMatch.index;
+    }
+    if (lastSuffixPos > 0) {
+      // Only override if the company suffix is on a DIFFERENT line than the role keyword
+      const betweenKeywordAndSuffix = afterKeyword.slice(0, lastSuffixPos);
+      const hasLineBreak = /\n/.test(betweenKeywordAndSuffix);
+      if (hasLineBreak) {
+        // Company suffix is on a different line — check if we're still in the
+        // company's section (no double-newline gap to current position)
+        const textAfterSuffix = afterKeyword.slice(lastSuffixPos);
+        if (!/\n\s*\n/.test(textAfterSuffix)) {
+          bestRole = "company";
+        }
+      }
+    }
+  }
+
   // If no explicit role found, check for company indicators (IČO, legal suffix)
   if (!bestRole) {
     const nearContext = lower.slice(-200);
-    if (/(?:ič[o]?|ico|identifikační\s+číslo|s\.r\.o\.|a\.s\.|k\.s\.|v\.o\.s\.|spol\.\s*s\s*r\.o\.|se|akciová společnost)/.test(nearContext)) {
+    if (/(?:ič[o]?|ico|identifikační\s+číslo|s\.r\.o\.|a\.s\.|k\.s\.|v\.o\.s\.|spol\.\s*s\s*r\.o\.|akciová společnost)/.test(nearContext)) {
       bestRole = "company";
     }
   }
@@ -434,6 +470,8 @@ function detectReplacements(text: string): {
   entities: EntityGroup[];
   parties: ContractParty[];
   contractType: ContractType;
+  /** Maps merged roles to their final role (e.g. "company" → "seller") */
+  roleRemapping: Map<string, string>;
   notes: string[];
   optionalSections: string[];
 } {
@@ -559,7 +597,19 @@ function detectReplacements(text: string): {
       if (companyName.length < 4) continue;
 
       const textBefore = text.slice(0, lineStart + before.lastIndexOf(words[nameStart] || ""));
-      const role = detectRole(textBefore);
+      // Company names always get "company" role — they ARE the company entity.
+      // detectRole might return a stale party keyword (e.g. "buyer") from further back,
+      // but the entity itself is a company, so we prefer "company" unless an explicit
+      // party keyword like "prodávající" is on the SAME line.
+      let role = detectRole(textBefore);
+      const sameLine = text.slice(lineStart, match.index).toLowerCase();
+      const hasExplicitPartyOnLine = ROLE_MAP.some(({ pattern, role: r }) =>
+        r !== "representative" && r !== "administrator" && r !== "shareholder" && r !== "company"
+        && new RegExp(pattern.source, "i").test(sameLine)
+      );
+      if (!hasExplicitPartyOnLine) {
+        role = "company";
+      }
       addReplacement(companyName, role, "company_name", "text", "Firma", "Společnost", "Název společnosti", true);
     }
   }
@@ -650,7 +700,17 @@ function detectReplacements(text: string): {
     while ((match = regex.exec(text)) !== null) {
       const value = match[1] || match[0];
       const textBefore = text.slice(0, match.index);
-      const role = detectRole(textBefore);
+      let role = detectRole(textBefore);
+
+      // Amounts preceded by contract-level keywords (kupní cena, cena, celková částka)
+      // should not be assigned to a specific party — they belong to the contract itself
+      if (rule.namePrefix === "amount") {
+        const before80 = text.slice(Math.max(0, match.index - 100), match.index).toLowerCase();
+        if (/(?:kupní\s+cen|cena\s+(?:činí|je|bude)|celkov[áé]\s+(?:cen|částk)|sjednan[áé]\s+cen|dohodnut[áé]\s+cen)/.test(before80)) {
+          role = "";
+        }
+      }
+
       addReplacement(value, role, rule.namePrefix, rule.type, rule.titlePrefix, rule.group, rule.description, true);
     }
   }
@@ -894,6 +954,19 @@ function detectReplacements(text: string): {
 
   const parties = Array.from(partyMap.values());
 
+  // Build a role remapping for merged roles (e.g. "company" → "seller")
+  // This allows the caller to relabel field groups after merging
+  const roleRemapping = new Map<string, string>();
+  for (const party of parties) {
+    for (const fieldName of party.fieldNames) {
+      // Extract the original role from the field name prefix
+      const field = replacements.find((r) => r.field.name === fieldName);
+      if (field && field.field.entity && field.field.entity !== party.role) {
+        roleRemapping.set(field.field.entity, party.role);
+      }
+    }
+  }
+
   // ──────────────────────────────────────────────────
   // Detect optional sections
   // ──────────────────────────────────────────────────
@@ -910,12 +983,12 @@ function detectReplacements(text: string): {
     optionalSections.push("Smluvní pokuty");
   }
 
-  return { replacements, entities, parties, contractType, notes, optionalSections };
+  return { replacements, entities, parties, contractType, roleRemapping, notes, optionalSections };
 }
 
 /** Analyze plain text — replaces values with placeholders, nothing else */
 export function analyzeDocument(text: string): AnalysisResult {
-  const { replacements, entities, parties, contractType, notes, optionalSections } = detectReplacements(text);
+  const { replacements, entities, parties, contractType, roleRemapping, notes, optionalSections } = detectReplacements(text);
 
   // Apply replacements to a copy of the original text — only swap values, preserve everything else
   let templateText = text;
@@ -924,7 +997,15 @@ export function analyzeDocument(text: string): AnalysisResult {
   for (const r of replacements) {
     const escaped = r.original.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     templateText = templateText.replace(new RegExp(escaped, "g"), r.placeholder);
-    fields.push(r.field);
+
+    // Relabel field groups based on party merging (e.g. "Společnost" → "Prodávající")
+    const field = { ...r.field };
+    if (field.entity && roleRemapping.has(field.entity)) {
+      const newRole = roleRemapping.get(field.entity)!;
+      field.group = roleToLabel(newRole);
+      field.entity = newRole;
+    }
+    fields.push(field);
   }
 
   const groups = [...new Set(fields.map((f) => f.group))];
@@ -947,7 +1028,7 @@ export function analyzeDocument(text: string): AnalysisResult {
  */
 export function analyzeDocx(arrayBuffer: ArrayBuffer): AnalysisResult {
   const text = extractTextFromDocx(arrayBuffer);
-  const { replacements, entities, parties, contractType, notes, optionalSections } = detectReplacements(text);
+  const { replacements, entities, parties, contractType, roleRemapping, notes, optionalSections } = detectReplacements(text);
 
   // Apply replacements to plain text preview
   let templateText = text;
@@ -956,7 +1037,15 @@ export function analyzeDocx(arrayBuffer: ArrayBuffer): AnalysisResult {
   for (const r of replacements) {
     const escaped = r.original.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     templateText = templateText.replace(new RegExp(escaped, "g"), r.placeholder);
-    fields.push(r.field);
+
+    // Relabel field groups based on party merging
+    const field = { ...r.field };
+    if (field.entity && roleRemapping.has(field.entity)) {
+      const newRole = roleRemapping.get(field.entity)!;
+      field.group = roleToLabel(newRole);
+      field.entity = newRole;
+    }
+    fields.push(field);
   }
 
   // Apply replacements directly inside the DOCX XML (preserves formatting)
@@ -1011,7 +1100,7 @@ export function reprocessTemplate(templateText: string): AnalysisResult {
   });
 
   // Run standard detection on the text with placeholders removed
-  const { replacements, entities, parties, contractType, notes, optionalSections } = detectReplacements(safeText);
+  const { replacements, entities, parties, contractType, roleRemapping, notes, optionalSections } = detectReplacements(safeText);
 
   // Apply new replacements
   let result = safeText;
@@ -1020,7 +1109,14 @@ export function reprocessTemplate(templateText: string): AnalysisResult {
   for (const r of replacements) {
     const escaped = r.original.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     result = result.replace(new RegExp(escaped, "g"), r.placeholder);
-    fields.push(r.field);
+
+    const field = { ...r.field };
+    if (field.entity && roleRemapping.has(field.entity)) {
+      const newRole = roleRemapping.get(field.entity)!;
+      field.group = roleToLabel(newRole);
+      field.entity = newRole;
+    }
+    fields.push(field);
   }
 
   // Restore original placeholders
