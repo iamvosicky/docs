@@ -174,34 +174,57 @@ export default function DashboardPage() {
               Začněte ze šablony
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {availablePresets.map(preset => (
-                <div
-                  key={preset.id}
-                  className="rounded-2xl bg-card p-5 flex flex-col"
-                >
-                  <div className="h-10 w-10 rounded-[14px] bg-gradient-to-br from-emerald-500/10 to-teal-500/10 flex items-center justify-center mb-3">
-                    <Layers className="h-5 w-5 text-emerald-500/70" />
-                  </div>
-                  <h3 className="text-[15px] font-semibold leading-snug mb-1">{preset.name}</h3>
-                  <p className="text-[12px] text-muted-foreground/60 leading-relaxed mb-3 flex-1">
-                    {preset.description}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground/40">
-                      {preset.templateIds.length} {preset.templateIds.length === 1 ? 'dokument' : preset.templateIds.length < 5 ? 'dokumenty' : 'dokumentů'}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="rounded-xl h-7 px-3 text-[11px] font-medium text-muted-foreground/60 hover:text-foreground"
-                      onClick={() => handleCreateFromTemplate(preset)}
-                    >
-                      Vytvořit
-                      <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+              {availablePresets.map(preset => {
+                const previewDocs = preset.templateIds
+                  .slice(0, 4)
+                  .map(id => getTemplate(id))
+                  .filter(Boolean);
+                const remaining = preset.templateIds.length - previewDocs.length;
+
+                return (
+                  <button
+                    key={preset.id}
+                    onClick={() => handleCreateFromTemplate(preset)}
+                    className="group rounded-2xl bg-card p-5 text-left transition-all duration-200 hover:shadow-md hover:shadow-black/[0.04] dark:hover:shadow-white/[0.02] hover:-translate-y-0.5 flex flex-col"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="h-10 w-10 rounded-[14px] bg-gradient-to-br from-emerald-500/10 to-teal-500/10 flex items-center justify-center">
+                        <Layers className="h-5 w-5 text-emerald-500/70" />
+                      </div>
+                      <span className="text-[11px] text-muted-foreground/40 mt-1">
+                        {docCount(preset.templateIds.length)}
+                      </span>
+                    </div>
+
+                    <h3 className="text-[15px] font-semibold leading-snug mb-0.5">{preset.name}</h3>
+                    <p className="text-[12px] text-muted-foreground/60 leading-relaxed mb-4">
+                      {preset.description}
+                    </p>
+
+                    {/* Document preview list */}
+                    <div className="space-y-1.5 mb-4 flex-1">
+                      {previewDocs.map((doc, i) => (
+                        <div key={i} className="flex items-center gap-2 text-[12px] text-muted-foreground/50">
+                          <FileText className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{doc!.name}</span>
+                        </div>
+                      ))}
+                      {remaining > 0 && (
+                        <p className="text-[11px] text-muted-foreground/30 pl-5">
+                          +{remaining} {remaining < 5 ? 'další' : 'dalších'}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-end pt-2 border-t border-border/30">
+                      <span className="text-[12px] text-muted-foreground/30 group-hover:text-foreground transition-colors flex items-center gap-1">
+                        Vytvořit sadu
+                        <ArrowRight className="h-3 w-3" />
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </section>
         )}
