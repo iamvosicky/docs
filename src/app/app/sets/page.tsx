@@ -299,7 +299,7 @@ export default function DocumentSetsPage() {
                 ) : (
                   <Link
                     href={`/app/sets/${docSet.id}`}
-                    className="block rounded-2xl bg-card p-5 transition-all duration-200 hover:shadow-md hover:shadow-black/[0.04] dark:hover:shadow-white/[0.02] hover:-translate-y-0.5 flex flex-col"
+                    className="rounded-2xl bg-card p-5 transition-all duration-200 hover:shadow-md hover:shadow-black/[0.04] dark:hover:shadow-white/[0.02] hover:-translate-y-0.5 flex flex-col h-full"
                   >
                     {/* Header row */}
                     <div className="flex items-start justify-between mb-3">
@@ -409,7 +409,7 @@ export default function DocumentSetsPage() {
                     )}
 
                     {/* Bottom action hint */}
-                    <div className="flex items-center justify-end pt-2 border-t border-border/30">
+                    <div className="flex items-center justify-end pt-2 border-t border-border/30 mt-auto">
                       <span className="text-[12px] text-muted-foreground/30 group-hover:text-muted-foreground/70 transition-colors flex items-center gap-1">
                         Otevřít
                         <ArrowRight className="h-3 w-3" />
