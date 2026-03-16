@@ -146,101 +146,108 @@ export default function DocumentSetsPage() {
 
       {/* ─── Create flow ─── */}
       {creating && (
-        <div className="rounded-2xl bg-card mb-8">
+        <div className="rounded-2xl border bg-card overflow-hidden mb-8">
           {createStep === 'name' && (
-            <div className="p-5">
-              <p className="text-[14px] font-medium mb-3">Pojmenujte sadu</p>
-              <div className="flex gap-2">
-                <Input
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="např. Založení a.s."
-                  autoFocus
-                  className="rounded-xl h-10"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCreateName();
-                    if (e.key === 'Escape') handleCancelCreate();
-                  }}
-                />
-                <Button onClick={handleCreateName} size="sm" className="rounded-xl h-10 px-5 text-[13px]" disabled={!newName.trim()}>
-                  Pokračovat
-                  <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                </Button>
-                <Button onClick={handleCancelCreate} variant="ghost" size="sm" className="rounded-xl h-10">
-                  <X className="h-4 w-4" />
-                </Button>
+            <>
+              <div className="px-5 py-3 border-b bg-muted/30">
+                <span className="text-sm font-medium">Nová sada dokumentů</span>
               </div>
-            </div>
+              <div className="p-5">
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                  Název sady <span className="text-destructive">*</span>
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="např. Založení a.s."
+                    autoFocus
+                    className="rounded-xl h-10"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCreateName();
+                      if (e.key === 'Escape') handleCancelCreate();
+                    }}
+                  />
+                  <Button onClick={handleCreateName} className="rounded-xl h-10 px-5 text-[13px]" disabled={!newName.trim()}>
+                    Pokračovat
+                    <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                  </Button>
+                  <Button onClick={handleCancelCreate} variant="ghost" className="rounded-xl h-10 px-3">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
 
           {createStep === 'documents' && currentNewSet && (
-            <div>
-              <div className="px-5 py-4 flex items-center justify-between">
+            <>
+              <div className="px-5 py-3 border-b bg-muted/30 flex items-center justify-between">
                 <div>
-                  <p className="text-[15px] font-semibold">{currentNewSet.name}</p>
-                  <p className="text-[12px] text-muted-foreground/60">
+                  <span className="text-sm font-medium">{currentNewSet.name}</span>
+                  <span className="text-xs text-muted-foreground ml-2">
                     {currentNewSet.templateIds.length === 0
-                      ? 'Přidejte dokumenty do sady'
+                      ? 'Přidejte dokumenty'
                       : docCount(currentNewSet.templateIds.length)}
-                  </p>
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <Link href="/upload">
-                    <Button variant="ghost" size="sm" className="rounded-xl text-[12px] gap-1 text-muted-foreground/60">
+                    <Button variant="ghost" size="sm" className="rounded-xl text-xs gap-1">
                       <Upload className="h-3 w-3" />
                       Nahrát
                     </Button>
                   </Link>
-                  <Button onClick={handleCreateDone} size="sm" className="rounded-xl h-8 px-4 text-[12px]">
+                  <Button onClick={handleCreateDone} size="sm" className="rounded-xl text-xs px-4">
                     Hotovo
                   </Button>
                 </div>
               </div>
 
               {currentNewSet.templateIds.length > 0 && (
-                <div className="border-t border-border/30">
+                <div className="border-b">
                   {currentNewSet.templateIds.map(tid => (
-                    <div key={tid} className="flex items-center gap-2.5 px-5 py-2.5 text-[13px]">
-                      <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                    <div key={tid} className="flex items-center gap-2.5 px-5 py-2.5 text-sm">
+                      <Check className="h-3.5 w-3.5 text-primary shrink-0" />
                       <span className="truncate">{getTemplateName(tid)}</span>
                     </div>
                   ))}
                 </div>
               )}
 
-              <div className="border-t border-border/30 p-3">
+              <div className="p-3">
                 {allTemplates.length > 5 && (
                   <div className="relative mb-2">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/40" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                     <Input
                       value={docSearch}
                       onChange={(e) => setDocSearch(e.target.value)}
-                      placeholder="Hledat..."
-                      className="pl-9 h-9 rounded-xl text-[13px] bg-muted/30 border-0"
+                      placeholder="Hledat šablonu..."
+                      className="pl-9 h-9 rounded-xl"
                     />
                   </div>
                 )}
-                <div className="max-h-48 overflow-y-auto space-y-0.5">
+                <div className="max-h-52 overflow-y-auto">
                   {availableForNewSet.length > 0 ? (
                     availableForNewSet.map(t => (
                       <button
                         key={t.id}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left hover:bg-accent/30 transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-muted/30 transition-colors"
                         onClick={() => addTemplateToSet(newSetId!, t.id)}
                       >
-                        <FileText className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
-                        <span className="text-[13px] truncate flex-1">{t.name}</span>
-                        <Plus className="h-3 w-3 text-muted-foreground/30 shrink-0" />
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-sm truncate flex-1">{t.name}</span>
+                        <Plus className="h-3 w-3 text-muted-foreground/50 shrink-0" />
                       </button>
                     ))
                   ) : (
-                    <p className="px-3 py-4 text-center text-[12px] text-muted-foreground/40">
-                      {docSearch ? 'Nenalezeno' : 'Všechny přidány'}
+                    <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                      {docSearch ? 'Žádná šablona nenalezena' : 'Všechny šablony přidány'}
                     </p>
                   )}
                 </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       )}
