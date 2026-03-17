@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import {
   FileText, Loader2, Download, ArrowRight, ArrowLeft, CheckCircle2,
-  Check, X, Package, ClipboardList, Sparkles, Printer
+  Check, X, Package, ClipboardList, Sparkles
 } from 'lucide-react';
 import { getTemplate, getTemplates, getAllTemplates, type Template, getFieldInputType, getFieldPlaceholder, getFieldHint, validateField, type FieldInputType } from '@/lib/template-schemas';
 import { downloadDocument, downloadAllAsZip } from '@/lib/document-generator';
@@ -498,7 +498,7 @@ function GenerateContent() {
               {selectedTemplates.length === 1 ? 'Dokument vygenerován' : `${selectedTemplates.length} dokumentů vygenerováno`}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Stáhněte DOCX přímo, nebo uložte jako PDF přes tisk
+              Stáhněte ve formátu DOCX nebo PDF
             </p>
           </div>
 
@@ -536,7 +536,7 @@ function GenerateContent() {
                         }
                       }}
                     >
-                      {downloadingId === `${template.id}-pdf` ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Printer className="h-3 w-3 mr-1" />}
+                      {downloadingId === `${template.id}-pdf` ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Download className="h-3 w-3 mr-1" />}
                       PDF
                     </Button>
                     <Button
@@ -583,7 +583,7 @@ function GenerateContent() {
               }}
             >
               {downloadingId === 'zip' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-              Stáhnout vše DOCX (ZIP)
+              Stáhnout vše (ZIP)
             </Button>
           )}
 
