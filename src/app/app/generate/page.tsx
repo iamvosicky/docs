@@ -67,6 +67,25 @@ function GenerateContent() {
     return fieldMap;
   }, [selectedTemplates]);
 
+  // Pre-fill date fields with today's date
+  useEffect(() => {
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const todayCz = `${dd}.${mm}.${yyyy}`;
+
+    const defaults: Record<string, string> = {};
+    for (const [key, field] of mergedFields) {
+      if (field.inputType === 'date' && !formValues[key]) {
+        defaults[key] = todayCz;
+      }
+    }
+    if (Object.keys(defaults).length > 0) {
+      setFormValues(prev => ({ ...defaults, ...prev }));
+    }
+  }, [mergedFields]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Group fields by entity role prefix for better UX
   const groupedFields = useMemo(() => {
     const groups = new Map<string, { prefix: string; fields: { key: string; title: string; required: boolean; inputType: FieldInputType }[] }>();
