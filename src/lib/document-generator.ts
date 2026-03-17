@@ -1,7 +1,7 @@
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import type { Template } from './template-schemas';
-import { getCustomTemplateDocx } from './template-schemas';
+import { getCustomTemplateDocx, getCustomTemplateText } from './template-schemas';
 
 // ─── Field mappings ──────────────────────────────────────────────────────────
 // Map from schema field names to actual DOCX template placeholder names
@@ -308,23 +308,170 @@ export async function generatePDF(
   if (pdfBlob) return pdfBlob;
 
   // No provider — fall back to browser print dialog
-  await browserPrintFallback(template, docxBlob);
+  await browserPrintFallback(template, formData);
   return null;
 }
 
+// ─── Browser print fallback (renders document as HTML for Save-as-PDF) ───────
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** Build full HTML for built-in templates — mirrors the DOCX structure. */
+function buildPdfHtml(template: Template, formData: Record<string, string>): string {
+  const groups = groupFields(template, formData);
+  const today = new Date().toLocaleDateString('cs-CZ');
+  const date = formData['DATE'] || formData['DATUM'] || today;
+
+  let sections = '';
+  let sectionNum = 1;
+  for (const [groupName, fields] of groups) {
+    let rows = '';
+    for (const field of fields) {
+      const val = field.value
+        ? escapeHtml(field.value)
+        : '<span style="color:#bbb">_______________</span>';
+      rows += `
+        <tr>
+          <td style="padding:5px 12px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top;color:#374151;width:40%">${escapeHtml(field.title)}</td>
+          <td style="padding:5px 0;color:#111827">${val}</td>
+        </tr>`;
+    }
+    sections += `
+      <div style="margin-bottom:24px">
+        <h2 style="font-size:14px;font-weight:700;color:#1e3a5f;margin:0 0 10px 0;padding-bottom:6px;border-bottom:2px solid #e5e7eb">
+          ${toRoman(sectionNum)}. ${escapeHtml(groupName)}
+        </h2>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">${rows}</table>
+      </div>`;
+    sectionNum++;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 22mm 25mm 22mm;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #111827;
+    line-height: 1.5;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+  <div style="text-align:center;margin-bottom:8px">
+    <h1 style="font-size:20px;font-weight:800;letter-spacing:1px;color:#0f172a;margin-bottom:4px">
+      ${escapeHtml(template.name.toUpperCase())}
+    </h1>
+    <p style="font-size:11px;color:#6b7280;font-style:italic">${escapeHtml(template.description)}</p>
+  </div>
+
+  <div style="text-align:right;font-size:11px;color:#6b7280;margin-bottom:16px">
+    V Praze dne ${escapeHtml(date)}
+  </div>
+
+  <hr style="border:none;border-top:1px solid #d1d5db;margin-bottom:24px">
+
+  ${sections}
+
+  <div style="margin-top:48px;display:flex;justify-content:space-between">
+    <div style="width:42%;text-align:center">
+      <div style="border-top:1px solid #374151;padding-top:8px;font-size:11px;color:#6b7280">Podpis</div>
+    </div>
+    <div style="width:42%;text-align:center">
+      <div style="border-top:1px solid #374151;padding-top:8px;font-size:11px;color:#6b7280">Podpis</div>
+    </div>
+  </div>
+
+  <div style="position:fixed;bottom:8mm;left:0;right:0;text-align:center;font-size:8px;color:#d1d5db">
+    Vygenerováno: ${escapeHtml(today)} | DocGen
+  </div>
+</body>
+</html>`;
+}
+
+/** Build HTML for custom templates — preserves original document text with values filled in. */
+function buildCustomPdfHtml(template: Template, formData: Record<string, string>): string | null {
+  const templateText = getCustomTemplateText(template.id);
+  if (!templateText) return null;
+
+  // Replace all {{PLACEHOLDER}} with actual values
+  let filledText = templateText;
+  for (const [key, value] of Object.entries(formData)) {
+    filledText = filledText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value || '_______________');
+  }
+  // Replace any remaining unfilled placeholders
+  filledText = filledText.replace(/\{\{[A-Z_0-9]+\}\}/g, '_______________');
+
+  // Convert line breaks to HTML paragraphs, preserving the original structure
+  const paragraphs = filledText.split('\n').map(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return '<br>';
+    return `<p style="margin:0 0 6px 0">${escapeHtml(trimmed)}</p>`;
+  }).join('\n');
+
+  return `<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 22mm 25mm 22mm;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #111827;
+    font-size: 12px;
+    line-height: 1.6;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  p { margin: 0 0 6px 0; }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+  ${paragraphs}
+  <div style="position:fixed;bottom:8mm;left:0;right:0;text-align:center;font-size:8px;color:#d1d5db">
+    Vygenerováno: ${new Date().toLocaleDateString('cs-CZ')} | DocGen
+  </div>
+</body>
+</html>`;
+}
+
 /**
- * Fallback: open the DOCX content in a hidden iframe and trigger the
+ * Fallback: render the document as HTML in a hidden iframe and trigger the
  * browser's print dialog so the user can "Save as PDF" manually.
  *
  * This preserves the old behaviour when PDF_PROVIDER=none.
  */
 function browserPrintFallback(
   template: Template,
-  _docxBlob: Blob,
+  formData: Record<string, string>,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    // Build a minimal HTML representation for printing
-    const html = buildPrintHtml(template);
+    // For custom templates use their original text layout, otherwise use grouped fields
+    const html = buildCustomPdfHtml(template, formData) || buildPdfHtml(template, formData);
 
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
@@ -378,24 +525,6 @@ function browserPrintFallback(
       }
     }, 1500);
   });
-}
-
-/** Minimal print-preview HTML used only as a last-resort fallback. */
-function buildPrintHtml(template: Template): string {
-  return `<!DOCTYPE html>
-<html lang="cs">
-<head><meta charset="UTF-8">
-<style>
-  @page { size: A4; margin: 20mm 22mm 25mm 22mm; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color: #111; }
-</style></head>
-<body>
-  <h1 style="text-align:center;font-size:18px">${template.name}</h1>
-  <p style="text-align:center;color:#666;font-size:12px">
-    Tento dokument byl vygenerován ze šablony DOCX.<br>
-    Pro nejlepší kvalitu stáhněte DOCX soubor.
-  </p>
-</body></html>`;
 }
 
 // ─── Download helpers ────────────────────────────────────────────────────────
