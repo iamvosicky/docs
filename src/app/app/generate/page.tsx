@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { getTemplate, getTemplates, getAllTemplates, type Template, getFieldInputType, getFieldPlaceholder, getFieldHint, validateField, type FieldInputType } from '@/lib/template-schemas';
 import { downloadDocument, downloadAllAsZip } from '@/lib/document-generator';
+import { addDocuments, type GeneratedDocument } from '@/lib/document-history-store';
 import { EntitySelector } from '@/components/entity-selector';
 import Link from 'next/link';
 
@@ -167,8 +168,19 @@ function GenerateContent() {
 
     setIsGenerating(true);
     try {
-      // Documents will be generated on-demand when downloading
-      // Just validate and move to step 3
+      // Save to document history
+      const now = new Date().toISOString();
+      const newDocs: GeneratedDocument[] = selectedTemplates.map((t) => ({
+        id: `${t.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        name: t.name,
+        templateId: t.id,
+        templateName: t.name,
+        createdAt: now,
+        status: 'completed' as const,
+        formData: { ...formValues },
+      }));
+      addDocuments(newDocs);
+
       setStep(3);
       toast.success(`${selectedTemplates.length} ${selectedTemplates.length === 1 ? 'dokument připraven' : 'dokumentů připraveno'} ke stažení`);
     } catch {

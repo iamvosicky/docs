@@ -1,20 +1,53 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { FolderOpen, Sparkles, FileText, Download, Clock } from 'lucide-react';
-
-interface Document {
-  id: string;
-  name: string;
-  templateName: string;
-  createdAt: string;
-  status: 'completed' | 'processing' | 'failed';
-}
+import { FolderOpen, Sparkles, FileText, Download, Trash2, Loader2 } from 'lucide-react';
+import {
+  getDocumentHistory,
+  removeDocument,
+  type GeneratedDocument,
+} from '@/lib/document-history-store';
+import { getTemplate } from '@/lib/template-schemas';
+import { downloadDocument } from '@/lib/document-generator';
+import { toast } from 'sonner';
 
 export default function DocumentsPage() {
-  const [documents] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<GeneratedDocument[]>([]);
+  const [mounted, setMounted] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    setDocuments(getDocumentHistory());
+  }, []);
+
+  const handleDelete = (doc: GeneratedDocument) => {
+    removeDocument(doc.id);
+    setDocuments(getDocumentHistory());
+    toast.success(`„${doc.name}" odstraněn`);
+  };
+
+  const handleDownload = async (doc: GeneratedDocument, format: 'docx' | 'pdf') => {
+    const template = getTemplate(doc.templateId);
+    if (!template) {
+      toast.error('Šablona nenalezena');
+      return;
+    }
+    const key = `${doc.id}-${format}`;
+    setDownloadingId(key);
+    try {
+      await downloadDocument(template, doc.formData, format);
+      toast.success(`${doc.name} (${format.toUpperCase()}) stažen`);
+    } catch {
+      toast.error('Stahování selhalo');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  if (!mounted) return null;
 
   return (
     <div className="max-w-4xl mx-auto pb-16">
@@ -22,7 +55,7 @@ export default function DocumentsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Dokumenty</h1>
-            <p className="text-[13px] text-muted-foreground/60 mt-1">Vygenerované dokumenty</p>
+            <p className="text-[13px] text-muted-foreground mt-1">Vygenerované dokumenty</p>
           </div>
           <Button asChild size="sm" className="rounded-xl h-9 px-4 gap-1.5 text-[13px] font-medium shadow-sm">
             <Link href="/app/generate">
@@ -39,7 +72,7 @@ export default function DocumentsPage() {
             <FolderOpen className="h-7 w-7 text-blue-500/40" />
           </div>
           <h3 className="text-[15px] font-semibold mb-1.5">Zatím žádné dokumenty</h3>
-          <p className="text-[13px] text-muted-foreground/60 mb-5 max-w-sm mx-auto leading-relaxed">
+          <p className="text-[13px] text-muted-foreground mb-5 max-w-sm mx-auto leading-relaxed">
             Vygenerujte první dokument ze šablony.
           </p>
           <Button asChild size="sm" className="rounded-xl h-9 px-4 gap-1.5 text-[13px] font-medium">
@@ -54,16 +87,16 @@ export default function DocumentsPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b">
-                <th className="text-left px-5 py-3.5 text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">Název</th>
-                <th className="text-left px-5 py-3.5 text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">Šablona</th>
-                <th className="text-left px-5 py-3.5 text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">Vytvořeno</th>
-                <th className="text-left px-5 py-3.5 text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">Stav</th>
+                <th className="text-left px-5 py-3.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Název</th>
+                <th className="text-left px-5 py-3.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Šablona</th>
+                <th className="text-left px-5 py-3.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Vytvořeno</th>
+                <th className="text-left px-5 py-3.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Stav</th>
                 <th className="text-right px-5 py-3.5"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
               {documents.map((doc) => (
-                <tr key={doc.id} className="hover:bg-accent/30 transition-colors">
+                <tr key={doc.id} className="hover:bg-accent/30 transition-colors group">
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2.5">
                       <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 flex items-center justify-center shrink-0">
@@ -72,9 +105,9 @@ export default function DocumentsPage() {
                       <span className="text-[14px] font-medium">{doc.name}</span>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5 text-[13px] text-muted-foreground/60">{doc.templateName}</td>
-                  <td className="px-5 py-3.5">
-                    <span className="text-[13px] text-muted-foreground/60">
+                  <td className="px-5 py-3.5 text-[13px] text-muted-foreground hidden sm:table-cell">{doc.templateName}</td>
+                  <td className="px-5 py-3.5 hidden sm:table-cell">
+                    <span className="text-[13px] text-muted-foreground">
                       {new Date(doc.createdAt).toLocaleDateString('cs-CZ')}
                     </span>
                   </td>
@@ -88,12 +121,41 @@ export default function DocumentsPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3.5 text-right">
-                    {doc.status === 'completed' && (
-                      <Button variant="ghost" size="sm" className="h-7 rounded-xl text-[12px] gap-1">
-                        <Download className="h-3 w-3" />
-                        Stáhnout
+                    <div className="flex items-center justify-end gap-1">
+                      {doc.status === 'completed' && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 rounded-xl text-[12px] gap-1"
+                            disabled={downloadingId === `${doc.id}-pdf`}
+                            onClick={() => handleDownload(doc, 'pdf')}
+                          >
+                            {downloadingId === `${doc.id}-pdf` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                            PDF
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 rounded-xl text-[12px] gap-1"
+                            disabled={downloadingId === `${doc.id}-docx`}
+                            onClick={() => handleDownload(doc, 'docx')}
+                          >
+                            {downloadingId === `${doc.id}-docx` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                            DOCX
+                          </Button>
+                        </>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 rounded-xl text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleDelete(doc)}
+                        aria-label={`Smazat ${doc.name}`}
+                      >
+                        <Trash2 className="h-3 w-3" />
                       </Button>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}
