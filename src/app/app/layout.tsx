@@ -60,7 +60,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <MobileSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <AppTopbar />
-          <main className="flex-1 overflow-y-auto">
+          <main id="main-content" className="flex-1 overflow-y-auto">
             <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl mx-auto">
               <PageTransition>{children}</PageTransition>
             </div>

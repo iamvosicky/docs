@@ -55,7 +55,7 @@ export function AppTopbar() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 rounded-lg text-muted-foreground/60 hover:text-foreground"
+          className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         >
           <Sun className="h-3.5 w-3.5 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
@@ -94,7 +94,7 @@ export function AppTopbar() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-[10px] text-muted-foreground/60 font-normal uppercase tracking-wider">Motiv</DropdownMenuLabel>
+            <DropdownMenuLabel className="text-[10px] text-muted-foreground font-normal uppercase tracking-wider">Motiv</DropdownMenuLabel>
             <div className="flex gap-0.5 px-1.5 py-1">
               {[
                 { key: 'light', icon: Sun, label: 'Světlý' },

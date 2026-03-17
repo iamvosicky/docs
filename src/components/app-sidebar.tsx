@@ -96,7 +96,7 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
       )}
       title={collapsed ? item.label : undefined}
     >
-      <Icon className={cn('h-[17px] w-[17px] shrink-0', isActive ? 'text-primary' : 'text-muted-foreground/70 group-hover:text-foreground')} />
+      <Icon className={cn('h-[17px] w-[17px] shrink-0', isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground')} />
       {!collapsed && <span>{item.label}</span>}
     </Link>
   );
@@ -110,7 +110,7 @@ function NavSection({ label, items, collapsed }: { label: string; items: NavItem
   return (
     <div className="space-y-0.5">
       {!collapsed && (
-        <p className="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40">
+        <p className="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
           {label}
         </p>
       )}
@@ -166,7 +166,8 @@ export function AppSidebar() {
 
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors rounded-lg"
+          aria-label={collapsed ? 'Rozbalit postranní panel' : 'Sbalit postranní panel'}
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors rounded-lg"
         >
           {collapsed ? (
             <ChevronRight className="h-3.5 w-3.5" />
@@ -190,7 +191,7 @@ export function AppSidebar() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[13px] font-medium truncate leading-tight">{user.name || 'Uživatel'}</p>
-              <p className="text-[10px] text-muted-foreground/60 truncate">{user.email}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
             </div>
           </div>
         </div>
@@ -216,7 +217,11 @@ export function MobileSidebar() {
     <>
       <div
         className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm md:hidden"
+        role="button"
+        aria-label="Zavřít navigaci"
+        tabIndex={0}
         onClick={() => setMobileOpen(false)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setMobileOpen(false); }}
       />
       <div className="fixed inset-y-0 left-0 z-50 w-[260px] bg-card border-r shadow-xl md:hidden flex flex-col animate-in slide-in-from-left duration-200">
         <div className="flex items-center justify-between h-14 px-4">
@@ -226,7 +231,7 @@ export function MobileSidebar() {
             </div>
             <span className="font-semibold text-[15px] tracking-tight">DocGen</span>
           </Link>
-          <button onClick={() => setMobileOpen(false)} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground">
+          <button onClick={() => setMobileOpen(false)} aria-label="Zavřít navigaci" className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground">
             <ChevronLeft className="h-4 w-4" />
           </button>
         </div>
@@ -254,7 +259,7 @@ export function MobileSidebar() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-medium truncate">{user.name || 'Uživatel'}</p>
-                <p className="text-[10px] text-muted-foreground/60 truncate">{user.email}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
               </div>
             </div>
           )}

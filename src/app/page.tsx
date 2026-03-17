@@ -91,7 +91,7 @@ function LandingPage() {
                   <div key={s.label} className="rounded-xl border border-border bg-muted/30 p-3 sm:p-4">
                     <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider mb-1">{s.label}</p>
                     <p className="text-xl sm:text-2xl font-bold">{s.value}</p>
-                    <p className="text-[10px] text-muted-foreground/60">{s.sub}</p>
+                    <p className="text-[10px] text-muted-foreground">{s.sub}</p>
                   </div>
                 ))}
               </div>
@@ -106,7 +106,7 @@ function LandingPage() {
                 ].map((doc) => (
                   <div key={doc.name} className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-4 py-2.5">
                     <div className="flex items-center gap-3">
-                      <FileText className="h-3.5 w-3.5 text-muted-foreground/40" />
+                      <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">{doc.name}</span>
                     </div>
                     {doc.status ? (
@@ -123,7 +123,7 @@ function LandingPage() {
       </section>
 
       {/* ── Features row ── */}
-      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+      <section aria-label="Funkce" className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
         <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             {[
@@ -377,8 +377,9 @@ function Dashboard() {
                   >
                     <button
                       onClick={() => handleDeleteCustom(ct.id, ct.name)}
-                      className="absolute top-3 right-3 h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
+                      className="absolute top-3 right-3 h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
                       title="Smazat šablonu"
+                      aria-label={`Smazat šablonu ${ct.name}`}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -407,7 +408,7 @@ function Dashboard() {
                         {ct.groups.length} skupin
                       </span>
                       {ct.createdAt && (
-                        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/60">
+                        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                           <Calendar className="h-3 w-3" />
                           {new Date(ct.createdAt).toLocaleDateString('cs-CZ')}
                         </span>

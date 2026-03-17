@@ -54,7 +54,7 @@ export function HomeQuickButtons() {
                     </div>
                   ))}
                   {remainingCount > 0 && (
-                    <p className="text-xs text-muted-foreground/70 ml-5">
+                    <p className="text-xs text-muted-foreground ml-5">
                       a dalších {remainingCount} {remainingCount >= 2 && remainingCount <= 4 ? 'dokumenty' : 'dokumentů'}...
                     </p>
                   )}
