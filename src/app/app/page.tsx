@@ -80,12 +80,20 @@ export default function SetsPage() {
             }
           </p>
         </div>
-        <Link href="/app/sets">
-          <Button size="sm" className="rounded-xl h-9 px-4 gap-1.5 text-[13px] font-medium">
-            <Plus className="h-3.5 w-3.5" />
-            Nová sada
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/upload">
+            <Button variant="outline" size="sm" className="rounded-xl h-9 px-4 gap-1.5 text-[13px] font-medium">
+              <Upload className="h-3.5 w-3.5" />
+              Importovat
+            </Button>
+          </Link>
+          <Link href="/app/sets">
+            <Button size="sm" className="rounded-xl h-9 px-4 gap-1.5 text-[13px] font-medium">
+              <Plus className="h-3.5 w-3.5" />
+              Nová sada
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="space-y-8">
@@ -182,8 +190,22 @@ export default function SetsPage() {
             </div>
             <h2 className="text-[16px] font-semibold mb-1.5">Zatím žádné sady</h2>
             <p className="text-[13px] text-muted-foreground/60 max-w-sm mx-auto mb-6">
-              Sada = skupina dokumentů pro konkrétní situaci. Vytvořte první sadu nebo začněte z předlohy.
+              Sada = skupina dokumentů pro konkrétní situaci. Vytvořte první sadu, nebo importujte vlastní dokument.
             </p>
+            <div className="flex items-center justify-center gap-3">
+              <Link href="/app/sets">
+                <Button size="sm" className="rounded-xl h-9 px-4 gap-1.5 text-[13px]">
+                  <Plus className="h-3.5 w-3.5" />
+                  Nová sada
+                </Button>
+              </Link>
+              <Link href="/upload">
+                <Button variant="outline" size="sm" className="rounded-xl h-9 px-4 gap-1.5 text-[13px]">
+                  <Upload className="h-3.5 w-3.5" />
+                  Importovat dokument
+                </Button>
+              </Link>
+            </div>
           </section>
         )}
 

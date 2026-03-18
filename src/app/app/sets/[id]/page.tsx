@@ -169,15 +169,27 @@ export default function DocumentSetDetailPage({ params }: { params: Promise<{ id
               : `${docSet.templateIds.length} ${docSet.templateIds.length === 1 ? 'dokument' : docSet.templateIds.length < 5 ? 'dokumenty' : 'dokumentů'}`}
           </span>
           {!adding && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="rounded-xl text-xs gap-1 text-muted-foreground hover:text-primary"
-              onClick={() => setAdding(true)}
-            >
-              <Plus className="h-3 w-3" />
-              Přidat dokument
-            </Button>
+            <div className="flex items-center gap-1">
+              <Link href="/upload">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-xl text-xs gap-1 text-muted-foreground hover:text-primary"
+                >
+                  <Upload className="h-3 w-3" />
+                  Importovat
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-xl text-xs gap-1 text-muted-foreground hover:text-primary"
+                onClick={() => setAdding(true)}
+              >
+                <Plus className="h-3 w-3" />
+                Přidat
+              </Button>
+            </div>
           )}
         </div>
 
@@ -270,6 +282,18 @@ export default function DocumentSetDetailPage({ params }: { params: Promise<{ id
           )}
 
           <div className="p-2 max-h-64 overflow-y-auto">
+            {/* Import option at the top */}
+            <Link
+              href="/upload"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-accent/60 transition-colors mb-1 border border-dashed border-muted-foreground/15"
+            >
+              <Upload className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Importovat dokument</p>
+                <p className="text-[11px] text-muted-foreground/50">Vytvoříme z něj šablonu, kterou pak jen vyklikáte</p>
+              </div>
+            </Link>
+
             {availableTemplates.length > 0 ? (
               availableTemplates.map((t) => (
                 <button
