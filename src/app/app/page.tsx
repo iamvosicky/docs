@@ -5,7 +5,8 @@ import { useAuth } from '@/components/auth/auth-provider';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import {
-  FileText, ArrowRight, Upload, Layers, Plus, Clock
+  FileText, ArrowRight, Upload, Layers, Plus, Clock,
+  Play, ChevronRight, Settings
 } from 'lucide-react';
 import {
   getAllTemplates, getCustomTemplates,
@@ -52,7 +53,26 @@ export default function DashboardPage() {
     setCustomTemplates(getCustomTemplates());
   }, []);
 
-  // Recent templates (custom first, then built-in)
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Dobré ráno' : hour < 18 ? 'Dobrý den' : 'Dobrý večer';
+
+  const handleCreateFromTemplate = (preset: PredefinedSet) => {
+    const created = addSet(preset.name, preset.description);
+    for (const tid of preset.templateIds) {
+      addTemplateToSet(created.id, tid);
+    }
+    toast.success(`Sada "${preset.name}" vytvořena`);
+  };
+
+  const existingSetNames = new Set(sets.map(s => s.name));
+  const availablePresets = predefinedSets.filter(p => !existingSetNames.has(p.name));
+
+  // Active sets = sets with templates, sorted by last updated
+  const activeSets = isClient ? [...sets].filter(s => s.templateIds.length > 0).sort((a, b) =>
+    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  ) : [];
+
+  // Recent templates for quick access
   const recentTemplates = [
     ...customTemplates.map(ct => ({
       id: `custom:${ct.id}`,
@@ -60,7 +80,6 @@ export default function DashboardPage() {
       desc: `${ct.fields.length} polí`,
       href: `/app/generate?template=custom:${ct.id}`,
       isCustom: true,
-      date: ct.createdAt,
     })),
     ...allTemplates.slice(0, 4).map(t => ({
       id: t.id,
@@ -68,9 +87,8 @@ export default function DashboardPage() {
       desc: t.description,
       href: `/app/generate?template=${t.id}`,
       isCustom: false,
-      date: '',
     })),
-  ].slice(0, 6);
+  ].slice(0, 5);
 
   // Pinned items
   const starredSets = isClient ? sets.filter(s => s.isStarred) : [];
@@ -83,27 +101,13 @@ export default function DashboardPage() {
       return null;
     })
     .filter(Boolean) as { id: string; name: string; href: string }[] : [];
-  const hasPinned = starredSets.length > 0 || starredTemplateItems.length > 0;
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Dobré ráno' : hour < 18 ? 'Dobrý den' : 'Dobrý večer';
-
-  const handleCreateFromTemplate = (preset: PredefinedSet) => {
-    const created = addSet(preset.name, preset.description);
-    for (const tid of preset.templateIds) {
-      addTemplateToSet(created.id, tid);
-    }
-    toast.success(`Sada "${preset.name}" vytvořena`);
-  };
-
-  // Check which presets haven't been created yet (by name match)
-  const existingSetNames = new Set(sets.map(s => s.name));
-  const availablePresets = predefinedSets.filter(p => !existingSetNames.has(p.name));
+  const hasActiveSets = activeSets.length > 0;
 
   return (
     <div className="max-w-4xl mx-auto pb-16">
       {/* ─── Header ─── */}
-      <div className="pt-4 pb-10">
+      <div className="pt-4 pb-8">
         <div className="flex items-end justify-between">
           <div>
             <p className="text-[13px] text-muted-foreground/60 mb-1">{greeting}</p>
@@ -111,237 +115,222 @@ export default function DashboardPage() {
               {user?.name || 'Dokumenty'}
             </h1>
           </div>
-          <Link href="/upload">
-            <Button
-              size="sm"
-              className="rounded-xl h-9 px-4 gap-1.5 text-[13px] font-medium shadow-sm"
-            >
-              <Upload className="h-3.5 w-3.5" />
-              Nahrát
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/app/settings" className="text-muted-foreground/40 hover:text-muted-foreground transition-colors">
+              <Settings className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-12">
-        {/* ─── Pinned ─── */}
-        {isClient && hasPinned && (
+      <div className="space-y-10">
+
+        {/* ═══════════════════════════════════════════════════════
+            SECTION 1: ACTIVE WORKFLOWS (Primary focus)
+            Sets with progress — "Continue where you left off"
+            ═══════════════════════════════════════════════════════ */}
+        {isClient && hasActiveSets && (
           <section>
             <p className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-widest mb-4">
-              Připnuto
+              Pokračovat
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {starredSets.map(docSet => (
+            <div className="space-y-3">
+              {activeSets.slice(0, 4).map(docSet => (
                 <Link
                   key={docSet.id}
-                  href={`/app/sets/${docSet.id}`}
-                  className="group relative rounded-2xl bg-card p-5 transition-all duration-200 hover:shadow-md hover:shadow-black/[0.04] dark:hover:shadow-white/[0.02] hover:-translate-y-0.5"
+                  href={`/app/generate?templates=${docSet.templateIds.join(',')}`}
+                  className="group flex items-center gap-4 rounded-2xl bg-card p-4 sm:p-5 transition-all duration-200 hover:shadow-md hover:shadow-black/[0.04] dark:hover:shadow-white/[0.02] hover:-translate-y-0.5"
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="h-10 w-10 rounded-[14px] bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center">
-                      <Layers className="h-5 w-5 text-violet-500/70" />
-                    </div>
-                    <StarButton starred onToggle={() => toggleSetStar(docSet.id)} />
+                  <div className="h-12 w-12 rounded-[14px] bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center shrink-0">
+                    <Play className="h-5 w-5 text-primary/70 ml-0.5" />
                   </div>
-                  <h3 className="text-[15px] font-semibold mb-0.5 leading-snug">{docSet.name}</h3>
-                  <p className="text-[12px] text-muted-foreground/60">{docCount(docSet.templateIds.length)}</p>
-                </Link>
-              ))}
-              {starredTemplateItems.map(item => (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className="group relative rounded-2xl bg-card p-5 transition-all duration-200 hover:shadow-md hover:shadow-black/[0.04] dark:hover:shadow-white/[0.02] hover:-translate-y-0.5"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="h-10 w-10 rounded-[14px] bg-gradient-to-br from-blue-500/10 to-cyan-500/10 flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-blue-500/70" />
-                    </div>
-                    <StarButton starred onToggle={() => toggleTemplateStar(item.id)} />
-                  </div>
-                  <h3 className="text-[15px] font-semibold mb-0.5 leading-snug">{item.name}</h3>
-                  <p className="text-[12px] text-muted-foreground/60">Šablona</p>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ─── Start from template ─── */}
-        {isClient && availablePresets.length > 0 && (
-          <section>
-            <p className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-widest mb-4">
-              Začněte ze šablony
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {availablePresets.map(preset => {
-                const previewDocs = preset.templateIds
-                  .slice(0, 4)
-                  .map(id => getTemplate(id))
-                  .filter(Boolean);
-                const remaining = preset.templateIds.length - previewDocs.length;
-
-                return (
-                  <button
-                    key={preset.id}
-                    onClick={() => handleCreateFromTemplate(preset)}
-                    className="group rounded-2xl bg-card p-5 text-left transition-all duration-200 hover:shadow-md hover:shadow-black/[0.04] dark:hover:shadow-white/[0.02] hover:-translate-y-0.5 flex flex-col"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="h-10 w-10 rounded-[14px] bg-gradient-to-br from-emerald-500/10 to-teal-500/10 flex items-center justify-center">
-                        <Layers className="h-5 w-5 text-emerald-500/70" />
-                      </div>
-                      <span className="text-[11px] text-muted-foreground/40 mt-1">
-                        {docCount(preset.templateIds.length)}
-                      </span>
-                    </div>
-
-                    <h3 className="text-[15px] font-semibold leading-snug mb-0.5">{preset.name}</h3>
-                    <p className="text-[12px] text-muted-foreground/60 leading-relaxed mb-4">
-                      {preset.description}
-                    </p>
-
-                    {/* Document preview list */}
-                    <div className="space-y-1.5 mb-4 flex-1">
-                      {previewDocs.map((doc, i) => (
-                        <div key={i} className="flex items-center gap-2 text-[12px] text-muted-foreground/50">
-                          <FileText className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{doc!.name}</span>
-                        </div>
-                      ))}
-                      {remaining > 0 && (
-                        <p className="text-[11px] text-muted-foreground/30 pl-5">
-                          +{remaining} {remaining < 5 ? 'další' : 'dalších'}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-end pt-2 border-t border-border/30">
-                      <span className="text-[12px] text-muted-foreground/30 group-hover:text-foreground transition-colors flex items-center gap-1">
-                        Vytvořit sadu
-                        <ArrowRight className="h-3 w-3" />
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* ─── Document Sets ─── */}
-        {isClient && (
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-widest">
-                Sady dokumentů
-              </p>
-              <Link
-                href="/app/sets"
-                className="text-[12px] text-muted-foreground/60 hover:text-foreground transition-colors"
-              >
-                {sets.length > 0 ? 'Zobrazit vše' : 'Vytvořit sadu'}
-              </Link>
-            </div>
-
-            {sets.length === 0 ? (
-              <div className="rounded-2xl bg-card p-8 sm:p-10 text-center">
-                <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center mb-4">
-                  <Layers className="h-7 w-7 text-violet-500/50" />
-                </div>
-                <h3 className="text-[15px] font-semibold mb-1.5">Vytvořte první sadu</h3>
-                <p className="text-[13px] text-muted-foreground/60 max-w-sm mx-auto mb-5 leading-relaxed">
-                  Seskupte související dokumenty a vyplňte sdílená data jednou pro všechny.
-                </p>
-                <Link href="/app/sets">
-                  <Button variant="outline" size="sm" className="rounded-xl h-8 px-4 text-[12px] gap-1.5 font-medium">
-                    <Plus className="h-3 w-3" />
-                    Nová sada
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sets.slice(0, 6).map(docSet => (
-                  <Link
-                    key={docSet.id}
-                    href={`/app/sets/${docSet.id}`}
-                    className="group rounded-2xl bg-card p-5 transition-all duration-200 hover:shadow-md hover:shadow-black/[0.04] dark:hover:shadow-white/[0.02] hover:-translate-y-0.5"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="h-10 w-10 rounded-[14px] bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center">
-                        <Layers className="h-5 w-5 text-violet-500/70" />
-                      </div>
-                      <StarButton
-                        starred={!!docSet.isStarred}
-                        onToggle={() => toggleSetStar(docSet.id)}
-                      />
-                    </div>
-                    <h3 className="text-[15px] font-semibold mb-0.5 leading-snug">{docSet.name}</h3>
-                    <div className="flex items-center gap-3 text-[12px] text-muted-foreground/60">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-[15px] font-semibold leading-snug">{docSet.name}</h3>
+                    <div className="flex items-center gap-3 mt-1 text-[12px] text-muted-foreground/50">
                       <span>{docCount(docSet.templateIds.length)}</span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {timeAgo(docSet.updatedAt)}
                       </span>
                     </div>
-                  </Link>
-                ))}
-
-                {/* Create new set card */}
-                <Link
-                  href="/app/sets"
-                  className="rounded-2xl border border-dashed border-muted-foreground/10 p-5 flex flex-col items-center justify-center text-center transition-all duration-200 hover:border-muted-foreground/20 hover:bg-card/50 min-h-[120px]"
-                >
-                  <Plus className="h-5 w-5 text-muted-foreground/30 mb-2" />
-                  <span className="text-[13px] text-muted-foreground/50 font-medium">Nová sada</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <StarButton
+                      starred={!!docSet.isStarred}
+                      onToggle={() => toggleSetStar(docSet.id)}
+                    />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground/20 group-hover:text-primary transition-colors" />
+                  </div>
                 </Link>
-              </div>
-            )}
+              ))}
+            </div>
           </section>
         )}
 
-        {/* ─── Recent Documents ─── */}
+        {/* ═══════════════════════════════════════════════════════
+            SECTION 2: QUICK START (New workflow or single doc)
+            ═══════════════════════════════════════════════════════ */}
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-widest">
-              Šablony
-            </p>
-            <Link
-              href="/app/templates"
-              className="text-[12px] text-muted-foreground/60 hover:text-foreground transition-colors"
-            >
-              Zobrazit vše
-            </Link>
-          </div>
+          <p className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-widest mb-4">
+            {hasActiveSets ? 'Nový dokument' : 'Začněte'}
+          </p>
 
+          {/* Preset sets — workflow starters */}
+          {isClient && availablePresets.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+              {availablePresets.slice(0, 3).map(preset => {
+                const previewDocs = preset.templateIds
+                  .slice(0, 3)
+                  .map(id => getTemplate(id))
+                  .filter(Boolean);
+
+                return (
+                  <button
+                    key={preset.id}
+                    onClick={() => handleCreateFromTemplate(preset)}
+                    className="group rounded-2xl bg-card p-4 text-left transition-all duration-200 hover:shadow-md hover:shadow-black/[0.04] dark:hover:shadow-white/[0.02] hover:-translate-y-0.5"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 flex items-center justify-center shrink-0">
+                        <Layers className="h-4 w-4 text-emerald-500/70" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-[14px] font-semibold leading-snug">{preset.name}</h3>
+                        <p className="text-[11px] text-muted-foreground/40">{docCount(preset.templateIds.length)}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-1 mb-3">
+                      {previewDocs.map((doc, i) => (
+                        <div key={i} className="flex items-center gap-1.5 text-[11px] text-muted-foreground/40">
+                          <FileText className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{doc!.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground/30 group-hover:text-primary transition-colors flex items-center gap-1">
+                      Vytvořit
+                      <ArrowRight className="h-3 w-3" />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Quick template list */}
           <div className="rounded-2xl bg-card divide-y divide-border/50">
             {recentTemplates.map((t) => (
               <Link
                 key={t.id}
                 href={t.href}
-                className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-accent/30 first:rounded-t-2xl last:rounded-b-2xl group"
+                className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-accent/30 first:rounded-t-2xl last:rounded-b-2xl group"
               >
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 flex items-center justify-center shrink-0">
-                  <FileText className="h-4 w-4 text-blue-500/60" />
+                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/10 to-cyan-500/10 flex items-center justify-center shrink-0">
+                  <FileText className="h-3.5 w-3.5 text-blue-500/60" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-medium truncate">{t.name}</p>
-                  <p className="text-[12px] text-muted-foreground/50 truncate">{t.desc}</p>
+                  <p className="text-[13px] font-medium truncate">{t.name}</p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {isClient && (
-                    <StarButton
-                      starred={isTemplateStar(t.id)}
-                      onToggle={() => toggleTemplateStar(t.id)}
-                    />
-                  )}
-                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-colors" />
-                </div>
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-muted-foreground/40 transition-colors shrink-0" />
               </Link>
             ))}
+
+            {/* Upload as last item in the list — de-emphasized */}
+            <Link
+              href="/upload"
+              className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-accent/30 last:rounded-b-2xl group"
+            >
+              <div className="h-8 w-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
+                <Upload className="h-3.5 w-3.5 text-muted-foreground/40" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] text-muted-foreground/60">Nahrát vlastní dokument</p>
+              </div>
+              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/15 group-hover:text-muted-foreground/40 transition-colors shrink-0" />
+            </Link>
           </div>
         </section>
+
+        {/* ═══════════════════════════════════════════════════════
+            SECTION 3: PINNED (Quick access to favorites)
+            ═══════════════════════════════════════════════════════ */}
+        {isClient && (starredSets.length > 0 || starredTemplateItems.length > 0) && (
+          <section>
+            <p className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-widest mb-4">
+              Připnuto
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {starredSets.map(docSet => (
+                <Link
+                  key={docSet.id}
+                  href={`/app/generate?templates=${docSet.templateIds.join(',')}`}
+                  className="group rounded-xl bg-card p-3.5 transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Layers className="h-4 w-4 text-violet-500/50 shrink-0" />
+                    <span className="text-[13px] font-medium truncate">{docSet.name}</span>
+                  </div>
+                </Link>
+              ))}
+              {starredTemplateItems.map(item => (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className="group rounded-xl bg-card p-3.5 transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FileText className="h-4 w-4 text-blue-500/50 shrink-0" />
+                    <span className="text-[13px] font-medium truncate">{item.name}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════
+            SECTION 4: ALL SETS (Full list, secondary)
+            ═══════════════════════════════════════════════════════ */}
+        {isClient && sets.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-widest">
+                Všechny sady
+              </p>
+              <Link
+                href="/app/sets"
+                className="text-[12px] text-muted-foreground/40 hover:text-foreground transition-colors"
+              >
+                Spravovat
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {sets.map(docSet => (
+                <Link
+                  key={docSet.id}
+                  href={`/app/sets/${docSet.id}`}
+                  className="group rounded-xl bg-card p-4 transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5"
+                >
+                  <h3 className="text-[14px] font-medium mb-1 truncate">{docSet.name}</h3>
+                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground/40">
+                    <span>{docCount(docSet.templateIds.length)}</span>
+                    <span>{timeAgo(docSet.updatedAt)}</span>
+                  </div>
+                </Link>
+              ))}
+
+              <Link
+                href="/app/sets"
+                className="rounded-xl border border-dashed border-muted-foreground/10 p-4 flex items-center justify-center transition-all duration-200 hover:border-muted-foreground/20 hover:bg-card/50"
+              >
+                <span className="text-[12px] text-muted-foreground/30 font-medium flex items-center gap-1.5">
+                  <Plus className="h-3 w-3" />
+                  Nová sada
+                </span>
+              </Link>
+            </div>
+          </section>
+        )}
 
       </div>
     </div>
