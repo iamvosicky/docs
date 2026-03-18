@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Lock, ArrowRight, FileText, Building2, Users, ShoppingCart, Scale, Stamp } from "lucide-react";
-import { useAuth } from "@/components/auth/auth-provider";
+import { useUser } from '@clerk/nextjs';
 import { getAllTemplates } from "@/lib/template-schemas";
 
 const tagLabels: Record<string, string> = {
@@ -30,7 +30,7 @@ const tagIcons: Record<string, React.ReactNode> = {
 };
 
 export function TemplateCatalog() {
-  const { isAuthenticated } = useAuth();
+  const { isSignedIn: isAuthenticated } = useUser();
   const templates = getAllTemplates();
 
   return (

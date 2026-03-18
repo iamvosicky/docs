@@ -1,8 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/components/auth/auth-provider';
+import { useUser } from '@clerk/nextjs';
 import { LoadingPage } from '@/components/ui/loading';
 
 export default function ProtectedLayout({
@@ -10,25 +8,10 @@ export default function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
-  const [isClient, setIsClient] = useState(false);
+  const { isLoaded, isSignedIn } = useUser();
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (isClient && !isLoading && !isAuthenticated) {
-      router.push('/login?returnUrl=' + encodeURIComponent(window.location.pathname));
-    }
-  }, [isClient, isLoading, isAuthenticated, router]);
-
-  if (isLoading || !isClient) {
-    return <LoadingPage />;
-  }
-
-  if (!isAuthenticated) {
+  // Middleware handles redirect — just show loading until Clerk loads
+  if (!isLoaded || !isSignedIn) {
     return <LoadingPage />;
   }
 

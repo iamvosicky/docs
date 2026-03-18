@@ -4,7 +4,7 @@ import "./globals.css";
 import { Suspense } from "react";
 import { Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
-import { AuthProvider } from "@/components/auth/auth-provider";
+import { ClerkProvider } from "@clerk/nextjs";
 import { LayoutWrapper } from "@/components/layout-wrapper";
 
 const geistSans = Geist({
@@ -38,25 +38,25 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
       >
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-4 focus:left-4 focus:rounded-lg focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow-lg"
-        >
-          Přeskočit na obsah
-        </a>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <Suspense>
-            <AuthProvider>
+        <ClerkProvider>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-4 focus:left-4 focus:rounded-lg focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow-lg"
+          >
+            Přeskočit na obsah
+          </a>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <Suspense>
               <LayoutWrapper>{children}</LayoutWrapper>
               <Sonner />
-            </AuthProvider>
-          </Suspense>
-        </ThemeProvider>
+            </Suspense>
+          </ThemeProvider>
+        </ClerkProvider>
       </body>
     </html>
   );

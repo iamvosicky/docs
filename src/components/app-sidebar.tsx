@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '@/components/auth/auth-provider';
+import { useUser } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import {
   FolderOpen, Layers, Users, Settings, Upload,
@@ -66,7 +66,7 @@ const mainNav: NavItem[] = [
   { href: '/app', label: 'Sady', icon: Layers },
   { href: '/app/documents', label: 'Dokumenty', icon: FolderOpen },
   { href: '/app/settings/entities', label: 'Subjekty', icon: Users },
-  { href: '/upload', label: 'Import', icon: Upload },
+  { href: '/app/import', label: 'Import', icon: Upload },
 ];
 
 const teamNav: NavItem[] = [];
@@ -99,7 +99,7 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
 }
 
 function NavSection({ label, items, collapsed }: { label: string; items: NavItem[]; collapsed: boolean }) {
-  const { isAdmin } = useAuth();
+  const isAdmin = true; // TODO: check Clerk org role
   const filtered = items.filter(i => !i.adminOnly || isAdmin);
   if (filtered.length === 0) return null;
 
@@ -121,7 +121,7 @@ function NavSection({ label, items, collapsed }: { label: string; items: NavItem
 // ─── Sidebar ───
 export function AppSidebar() {
   const { collapsed, setCollapsed } = useSidebar();
-  const { user } = useAuth();
+  const { user } = useUser();
 
   return (
     <aside
@@ -182,12 +182,12 @@ export function AppSidebar() {
           <div className="flex items-center gap-2.5">
             <div className="h-7 w-7 rounded-full bg-secondary flex items-center justify-center shrink-0">
               <span className="text-[11px] font-medium text-muted-foreground">
-                {user.name?.charAt(0).toUpperCase() || 'U'}
+                {user?.firstName?.charAt(0).toUpperCase() || 'U'}
               </span>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-medium truncate leading-tight">{user.name || 'Uživatel'}</p>
-              <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
+              <p className="text-[13px] font-medium truncate leading-tight">{user?.fullName || 'Uživatel'}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress}</p>
             </div>
           </div>
         </div>
@@ -199,7 +199,8 @@ export function AppSidebar() {
 // ─── Mobile sidebar ───
 export function MobileSidebar() {
   const { mobileOpen, setMobileOpen } = useSidebar();
-  const { user, isAdmin } = useAuth();
+  const { user } = useUser();
+  const isAdmin = true; // TODO: check Clerk org role
 
   if (!mobileOpen) return null;
 
@@ -250,12 +251,12 @@ export function MobileSidebar() {
             <div className="flex items-center gap-2.5 px-1">
               <div className="h-7 w-7 rounded-full bg-secondary flex items-center justify-center shrink-0">
                 <span className="text-[11px] font-medium text-muted-foreground">
-                  {user.name?.charAt(0).toUpperCase() || 'U'}
+                  {user?.firstName?.charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-medium truncate">{user.name || 'Uživatel'}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
+                <p className="text-[13px] font-medium truncate">{user?.fullName || 'Uživatel'}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress}</p>
               </div>
             </div>
           )}

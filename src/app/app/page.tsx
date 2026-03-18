@@ -66,20 +66,23 @@ export default function DashboardPage() {
     : [];
 
   // Templates for quick access section (custom first, then built-in, max 6)
-  const quickTemplates = isClient ? [
-    ...customTemplates.map(ct => ({
-      id: `custom:${ct.id}`,
-      name: ct.name,
-      meta: `${ct.fields.length} polí`,
-      href: `/app/generate?template=custom:${ct.id}`,
-    })),
-    ...allTemplates.slice(0, 6).map(t => ({
-      id: t.id,
-      name: t.name,
-      meta: t.description,
-      href: `/app/generate?template=${t.id}`,
-    })),
-  ].slice(0, 6) : [];
+  const quickTemplates = isClient ? (() => {
+    const items: { id: string; name: string; meta: string; href: string }[] = [];
+    const seenIds = new Set<string>();
+    for (const ct of customTemplates) {
+      const id = `custom:${ct.id}`;
+      if (seenIds.has(id)) continue;
+      seenIds.add(id);
+      items.push({ id, name: ct.name, meta: `${ct.fields.length} polí`, href: `/app/generate?template=${id}` });
+    }
+    for (const t of allTemplates) {
+      if (seenIds.has(t.id)) continue;
+      seenIds.add(t.id);
+      items.push({ id: t.id, name: t.name, meta: t.description, href: `/app/generate?template=${t.id}` });
+      if (items.length >= 6) break;
+    }
+    return items.slice(0, 6);
+  })() : [];
 
   const setCount = isClient ? sets.length : 0;
 

@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { useAuth } from '@/components/auth/auth-provider';
+import { usePathname } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
 import { AppSidebar, MobileSidebar, SidebarProvider } from '@/components/app-sidebar';
 import { AppTopbar } from '@/components/app-topbar';
 import { LoadingPage } from '@/components/ui/loading';
@@ -35,21 +35,10 @@ function PageTransition({ children }: { children: React.ReactNode }) {
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
-  const [isClient, setIsClient] = useState(false);
+  const { isLoaded, isSignedIn } = useUser();
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (isClient && !isLoading && !isAuthenticated) {
-      router.push('/login?returnUrl=' + encodeURIComponent(window.location.pathname));
-    }
-  }, [isClient, isLoading, isAuthenticated, router]);
-
-  if (isLoading || !isClient || !isAuthenticated) {
+  // Middleware handles redirect — just show loading until Clerk loads
+  if (!isLoaded || !isSignedIn) {
     return <LoadingPage />;
   }
 

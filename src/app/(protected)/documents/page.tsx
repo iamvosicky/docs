@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/components/auth/auth-provider';
+import { useUser } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingPage } from '@/components/ui/loading';
@@ -16,7 +16,7 @@ interface Document {
 }
 
 export default function DocumentsPage() {
-  const { user } = useAuth();
+  const { user } = useUser();
   const [isLoading, setIsLoading] = useState(true);
   const [documents, setDocuments] = useState<Document[]>([]);
 

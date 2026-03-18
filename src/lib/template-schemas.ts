@@ -432,7 +432,13 @@ export interface CustomTemplate {
 export function getCustomTemplates(): CustomTemplate[] {
   if (typeof window === 'undefined') return [];
   try {
-    return JSON.parse(localStorage.getItem('custom_templates') || '[]');
+    const all: CustomTemplate[] = JSON.parse(localStorage.getItem('custom_templates') || '[]');
+    // Deduplicate by id — keep the last (most recent) entry for each id
+    const byId = new Map<string, CustomTemplate>();
+    for (const t of all) {
+      byId.set(t.id, t);
+    }
+    return Array.from(byId.values());
   } catch {
     return [];
   }

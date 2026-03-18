@@ -1,68 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { verifyJwt } from '@/lib/jwt';
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
-const protectedPaths = [
-  '/app',
-  '/dashboard',
-  '/(dashboard)',
-  '/generate',
-  '/upload',
-  '/documents',
-  '/templates',
-  '/contracts',
-  '/template',
-];
+const isProtectedRoute = createRouteMatcher([
+  '/app(.*)',
+]);
 
-const publicPaths = ['/', '/login', '/api', '/debug', '/test-login'];
-
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  const token = request.cookies.get('auth-token')?.value;
-
-  // Validate the JWT (not just check existence)
-  let isAuthenticated = false;
-  if (token) {
-    const payload = await verifyJwt(token);
-    isAuthenticated = payload !== null;
+export default clerkMiddleware(async (auth, req) => {
+  if (isProtectedRoute(req)) {
+    await auth.protect();
   }
-
-  const isPublicPath = publicPaths.some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`)
-  );
-
-  const isProtectedPath = protectedPaths.some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`)
-  );
-
-  if (isPublicPath) {
-    if (isAuthenticated && pathname === '/login') {
-      return NextResponse.redirect(new URL('/app', request.url));
-    }
-    return NextResponse.next();
-  }
-
-  if (isProtectedPath && !isAuthenticated) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('returnUrl', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: [
-    '/app/:path*',
-    '/dashboard/:path*',
-    '/(dashboard)/:path*',
-    '/generate/:path*',
-    '/documents/:path*',
-    '/templates/:path*',
-    '/contracts/:path*',
-    '/template/:path*',
-    '/login',
-    '/',
-    '/((?!api|_next|fonts|images|favicon.ico|logo.svg).*)',
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    '/(api|trpc)(.*)',
   ],
 };

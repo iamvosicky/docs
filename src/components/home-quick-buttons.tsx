@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { FileText, Lock, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useCases } from "./use-case-shortcuts";
-import { useAuth } from "@/components/auth/auth-provider";
+import { useUser } from '@clerk/nextjs';
 import { getTemplate } from "@/lib/template-schemas";
 
 export function HomeQuickButtons() {
-  const { isAuthenticated } = useAuth();
+  const { isSignedIn: isAuthenticated } = useUser();
 
   return (
     <div>

@@ -2,7 +2,7 @@
 
 import { DynamicForm } from "@/components/forms/dynamic-form";
 import { useParams } from 'next/navigation';
-import { useAuth } from '@/components/auth/auth-provider';
+import { useUser } from '@clerk/nextjs';
 
 export const runtime = 'edge';
 
@@ -123,7 +123,7 @@ export default function TemplatePage() {
   const params = useParams();
   const templateId = Array.isArray(params?.id) ? params.id[0] : params?.id || '';
   const template = getTemplateData(templateId);
-  const { user } = useAuth();
+  const { user } = useUser();
 
   if (!template) {
     return (
@@ -179,7 +179,7 @@ export default function TemplatePage() {
           <h1 className="text-4xl font-bold mb-3">{template.name}</h1>
           <p className="text-lg text-muted-foreground">{template.description}</p>
           <p className="text-sm text-muted-foreground mt-2">
-            You are logged in as <span className="font-medium">{user?.email || 'Unknown User'}</span>
+            You are logged in as <span className="font-medium">{user?.primaryEmailAddress?.emailAddress || 'Unknown User'}</span>
           </p>
         </div>
 

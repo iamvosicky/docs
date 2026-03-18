@@ -1,68 +1,118 @@
 'use client';
 
 import Link from 'next/link';
-import { Building2, FileText, User, ArrowRight } from 'lucide-react';
+import { useUser } from '@clerk/nextjs';
+import {
+  User, Building2, Users, CreditCard, ArrowRight, Mail, Shield
+} from 'lucide-react';
 
-const settingsItems = [
+interface SettingsSection {
+  label: string;
+  items: {
+    href: string;
+    icon: React.ComponentType<{ className?: string }>;
+    title: string;
+    description: string;
+    disabled?: boolean;
+    badge?: string;
+  }[];
+}
+
+const sections: SettingsSection[] = [
   {
-    href: '/app/settings/entities',
-    icon: Building2,
-    title: 'Subjekty',
-    description: 'Uložené firmy a osoby pro rychlé vyplňování',
-    gradient: 'from-violet-500/10 to-indigo-500/10',
-    iconColor: 'text-violet-500/70',
+    label: 'Osobní',
+    items: [
+      {
+        href: '/app/settings/profile',
+        icon: User,
+        title: 'Profil',
+        description: 'Jméno, email a heslo',
+      },
+    ],
   },
   {
-    href: '/app/settings',
-    icon: User,
-    title: 'Profil',
-    description: 'Osobní údaje a nastavení účtu',
-    gradient: 'from-blue-500/10 to-cyan-500/10',
-    iconColor: 'text-blue-500/70',
-    disabled: true,
+    label: 'Organizace',
+    items: [
+      {
+        href: '/app/settings/organization',
+        icon: Building2,
+        title: 'Firma',
+        description: 'Název, IČO, adresa, fakturační údaje',
+      },
+      {
+        href: '/app/settings/team',
+        icon: Users,
+        title: 'Tým',
+        description: 'Členové, role a pozvánky',
+      },
+    ],
   },
   {
-    href: '/app/settings',
-    icon: FileText,
-    title: 'Šablony formulářů',
-    description: 'Uložené konfigurace pro rychlé generování',
-    gradient: 'from-emerald-500/10 to-teal-500/10',
-    iconColor: 'text-emerald-500/70',
-    disabled: true,
+    label: 'Předplatné',
+    items: [
+      {
+        href: '/app/settings/billing',
+        icon: CreditCard,
+        title: 'Fakturace',
+        description: 'Plán, platby a faktury',
+        disabled: true,
+        badge: 'Připravujeme',
+      },
+    ],
   },
 ];
 
 export default function SettingsPage() {
+  const { user } = useUser();
+
   return (
-    <div className="max-w-4xl mx-auto pb-16">
+    <div className="max-w-3xl mx-auto pb-16">
+      {/* Header */}
       <div className="pt-4 pb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">Nastavení</h1>
-        <p className="text-[13px] text-muted-foreground/60 mt-1">Konfigurace a profily</p>
+        <h1 className="text-[26px] sm:text-[30px] font-bold tracking-tight text-foreground">Nastavení</h1>
+        <p className="text-[13px] text-muted-foreground mt-1">Konfigurace účtu a organizace</p>
       </div>
 
-      <div className="space-y-3">
-        {settingsItems.map((item) => {
-          const Icon = item.icon;
-          const content = (
-            <div className={`flex items-center gap-4 rounded-2xl bg-card p-5 transition-all duration-200 ${
-              item.disabled
-                ? 'opacity-40'
-                : 'hover:shadow-md hover:shadow-black/[0.04] dark:hover:shadow-white/[0.02] hover:-translate-y-0.5 cursor-pointer'
-            }`}>
-              <div className={`h-11 w-11 rounded-[14px] bg-gradient-to-br ${item.gradient} flex items-center justify-center shrink-0`}>
-                <Icon className={`h-5 w-5 ${item.iconColor}`} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-[15px] font-semibold">{item.title}</h3>
-                <p className="text-[13px] text-muted-foreground/60 mt-0.5">{item.description}</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground/20 shrink-0" />
-            </div>
-          );
+      {/* Sections */}
+      <div className="space-y-8">
+        {sections.map(section => (
+          <div key={section.label}>
+            <h2 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">
+              {section.label}
+            </h2>
+            <div className="rounded-xl bg-card border border-border/50 divide-y divide-border/40">
+              {section.items.map(item => {
+                const Icon = item.icon;
+                const inner = (
+                  <div className={`flex items-center gap-4 px-5 py-4 transition-colors ${
+                    item.disabled
+                      ? 'opacity-40'
+                      : 'hover:bg-accent/30 cursor-pointer'
+                  } first:rounded-t-xl last:rounded-b-xl`}>
+                    <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-[14px] font-medium text-foreground">{item.title}</h3>
+                        {item.badge && (
+                          <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            {item.badge}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[12px] text-muted-foreground mt-0.5">{item.description}</p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground/20 shrink-0" />
+                  </div>
+                );
 
-          if (item.disabled) return <div key={item.title}>{content}</div>;
-          return <Link key={item.title} href={item.href}>{content}</Link>;
-        })}
+                if (item.disabled) return <div key={item.title}>{inner}</div>;
+                return <Link key={item.title} href={item.href}>{inner}</Link>;
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

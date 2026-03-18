@@ -14,11 +14,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { useAuth } from "./auth/auth-provider";
+import { useUser, useClerk, SignInButton } from '@clerk/nextjs';
 import { Sun, Moon, Monitor, LogOut, User, Settings, LayoutDashboard, Users, UserPlus, FileText, Menu, X } from "lucide-react";
 
 export function Navbar() {
-  const { isAuthenticated, isAdmin, user, logout } = useAuth();
+  const { user, isSignedIn } = useUser(); const { signOut } = useClerk(); const isAuthenticated = isSignedIn; const isAdmin = true; const logout = () => signOut();
   const { theme, setTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -97,17 +97,17 @@ export function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src="" alt={user?.name || "User"} />
+                      <AvatarImage src="" alt={user?.fullName || "User"} />
                       <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                        {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                        {user?.fullName ? user?.fullName.charAt(0).toUpperCase() : "U"}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 rounded-xl p-1.5">
                   <div className="px-2 py-2 mb-1">
-                    <p className="text-sm font-medium">{user?.name || "Uživatel"}</p>
-                    <p className="text-xs text-muted-foreground">{user?.email}</p>
+                    <p className="text-sm font-medium">{user?.fullName || "Uživatel"}</p>
+                    <p className="text-xs text-muted-foreground">{user?.primaryEmailAddress?.emailAddress}</p>
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="cursor-pointer rounded-lg py-2">
@@ -198,7 +198,7 @@ export function Navbar() {
                 <span className="sr-only">Přepnout motiv</span>
               </Button>
               <Button asChild size="sm" className="rounded-xl px-5">
-                <Link href="/login">Přihlásit se</Link>
+                <Link href="/sign-in">Přihlásit se</Link>
               </Button>
             </div>
           )}

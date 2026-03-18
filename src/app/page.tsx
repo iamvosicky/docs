@@ -5,7 +5,7 @@ import { HomeQuickButtons } from "@/components/home-quick-buttons";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/auth/auth-provider";
+import { useUser } from '@clerk/nextjs';
 import {
   ChevronDown, FileText, ArrowRight, CheckCircle2,
   FolderOpen, Plus, Upload, Zap, Shield, Download,
@@ -49,7 +49,7 @@ function LandingPage() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button asChild size="lg" className="rounded-full px-8 h-12 text-base font-medium">
-                <Link href="/login">
+                <Link href="/sign-in">
                   Začít zdarma
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Link>
@@ -174,7 +174,7 @@ function LandingPage() {
 
           <div className="text-center mt-14">
             <Button asChild size="lg" className="rounded-full px-8 h-12 text-base font-medium">
-              <Link href="/login">
+              <Link href="/sign-in">
                 Přihlásit se a začít
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Link>
@@ -203,7 +203,7 @@ function LandingPage() {
 
 // ─── Dashboard for authenticated users ───
 function Dashboard() {
-  const { user } = useAuth();
+  const { user } = useUser();
   const [showTemplates, setShowTemplates] = useState(false);
   const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>([]);
 
@@ -232,7 +232,7 @@ function Dashboard() {
               <div>
                 <p className="text-sm text-muted-foreground mb-1">{greeting},</p>
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                  {user?.name || "uživateli"}
+                  {user?.firstName || 'uživateli'}
                 </h1>
               </div>
 
@@ -467,7 +467,7 @@ function Dashboard() {
 
 // ─── Main page component ───
 export default function Home() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isSignedIn: isAuthenticated, isLoaded } = useUser(); const isLoading = !isLoaded;
   const router = useRouter();
 
   useEffect(() => {

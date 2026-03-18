@@ -289,7 +289,15 @@ export default function UploadPage() {
     if (!output) return;
 
     const saved = JSON.parse(localStorage.getItem('custom_templates') || '[]');
-    const id = templateName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    let id = templateName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+    // Ensure unique ID — append suffix if duplicate exists
+    const existingIds = new Set(saved.map((t: any) => t.id));
+    if (existingIds.has(id)) {
+      let suffix = 2;
+      while (existingIds.has(`${id}-${suffix}`)) suffix++;
+      id = `${id}-${suffix}`;
+    }
 
     // Check if DOCX base64 is too large for localStorage (>2MB)
     const docxBase64 = output.templateDocxBase64;

@@ -6,8 +6,11 @@ import { Navbar } from '@/components/navbar';
 export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAppRoute = pathname?.startsWith('/app');
+  const isAuthRoute = pathname?.startsWith('/sign-in') || pathname?.startsWith('/sign-up');
 
-  if (isAppRoute) {
+  // App routes have their own layout (sidebar + topbar)
+  // Auth routes have their own layout (centered, minimal header)
+  if (isAppRoute || isAuthRoute) {
     return <>{children}</>;
   }
 

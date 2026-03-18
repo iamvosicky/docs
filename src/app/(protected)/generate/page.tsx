@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useAuth } from '@/components/auth/auth-provider';
+import { useUser } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,7 +18,7 @@ import { IcoInputWithLookup } from '@/components/ico-input-with-lookup';
 import Link from 'next/link';
 
 function GenerateContent() {
-  const { user } = useAuth();
+  const { user } = useUser();
   const searchParams = useSearchParams();
 
   // Parse URL params
