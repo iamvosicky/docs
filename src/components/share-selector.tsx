@@ -67,11 +67,11 @@ export function ShareSelector({ shares, value, onChange }: ShareSelectorProps) {
       >
         <div className="flex items-center gap-2">
           <Building2 className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium">Podily ve spolecnosti</span>
+          <span className="text-sm font-medium">Podíly ve společnosti</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="tag-pill px-2 py-0.5 rounded text-[10px] font-medium">
-            {shares.length} {shares.length === 1 ? 'podil' : shares.length <= 4 ? 'podily' : 'podilu'} ({totalPercentage} %)
+            {shares.length} {shares.length === 1 ? 'podíl' : shares.length <= 4 ? 'podíly' : 'podílů'} ({totalPercentage} %)
           </span>
           {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
         </div>
@@ -90,7 +90,7 @@ export function ShareSelector({ shares, value, onChange }: ShareSelectorProps) {
                   : 'border-border hover:border-primary/50 text-muted-foreground'
               }`}
             >
-              Vsechny podily
+              Všechny podíly
               <span className="block text-[11px] font-normal mt-0.5">
                 {totalPercentage} % ({shares.length} podilu)
               </span>
@@ -104,9 +104,9 @@ export function ShareSelector({ shares, value, onChange }: ShareSelectorProps) {
                   : 'border-border hover:border-primary/50 text-muted-foreground'
               }`}
             >
-              Konkretni podily
+              Konkrétní podíly
               <span className="block text-[11px] font-normal mt-0.5">
-                Vybrat manualne
+                Vybrat manuálně
               </span>
             </button>
           </div>
@@ -115,7 +115,7 @@ export function ShareSelector({ shares, value, onChange }: ShareSelectorProps) {
           {value.mode === 'specific' && (
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground">
-                Vyberte podily k prevodu
+                Vyberte podíly k převodu
               </Label>
               <div className="divide-y rounded-xl border overflow-hidden">
                 {shares.map(share => {
@@ -163,7 +163,7 @@ export function ShareSelector({ shares, value, onChange }: ShareSelectorProps) {
           {/* Selected summary */}
           <div className="rounded-xl bg-muted/30 p-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Vybrano k prevodu:</span>
+              <span className="text-muted-foreground">Vybráno k převodu:</span>
               <span className="font-medium">
                 {selectedShares.length} {selectedShares.length === 1 ? 'podil' : selectedShares.length <= 4 ? 'podily' : 'podilu'}
                 {' '}({selectedPercentage} %)
@@ -174,12 +174,12 @@ export function ShareSelector({ shares, value, onChange }: ShareSelectorProps) {
           {/* Transfer details */}
           <div className="space-y-3">
             <Label className="text-xs font-medium text-muted-foreground">
-              Podrobnosti prevodu
+              Podrobnosti převodu
             </Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="transfer-pct" className="text-[11px] text-muted-foreground mb-1 block">
-                  Prevedeny podil (%)
+                  Převedený podíl (%)
                 </Label>
                 <div className="relative">
                   <Input
@@ -196,7 +196,7 @@ export function ShareSelector({ shares, value, onChange }: ShareSelectorProps) {
               </div>
               <div>
                 <Label htmlFor="transfer-amount" className="text-[11px] text-muted-foreground mb-1 block">
-                  Castka prevodu (Kc)
+                  Částka převodu (Kč)
                 </Label>
                 <div className="relative">
                   <Input
@@ -211,7 +211,7 @@ export function ShareSelector({ shares, value, onChange }: ShareSelectorProps) {
                     placeholder="0"
                     className="h-9 rounded-lg text-sm pr-8"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">Kc</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">Kč</span>
                 </div>
               </div>
             </div>

@@ -55,7 +55,7 @@ function GenerateContent() {
 
   // Merge all unique fields from selected templates
   const mergedFields = useMemo(() => {
-    const fieldMap = new Map<string, { title: string; required: boolean; inputType: FieldInputType }>();
+    const fieldMap = new Map<string, { title: string; required: boolean; inputType: FieldInputType; group?: string }>();
     for (const template of selectedTemplates) {
       const required = new Set(template.schema.required);
       for (const [key, prop] of Object.entries(template.schema.properties)) {
@@ -64,6 +64,7 @@ function GenerateContent() {
             title: prop.title,
             required: required.has(key),
             inputType: getFieldInputType(key, prop.title),
+            group: (prop as any).group,
           });
         }
       }
@@ -113,12 +114,19 @@ function GenerateContent() {
       let group = 'Obecné údaje';
       let prefix = '';
       const parts = key.split('_');
-      if (parts.length > 1) {
-        if (groupLabels[parts[0]]) {
-          group = groupLabels[parts[0]];
-          prefix = parts[0];
-        }
+
+      // Priority 1: Use group stored in schema (from document analyzer)
+      const schemaGroup = (field as any).group;
+      if (schemaGroup && schemaGroup !== 'Ostatní') {
+        group = schemaGroup;
+        prefix = parts[0] || '';
       }
+      // Priority 2: Match prefix against known role labels
+      else if (parts.length > 1 && groupLabels[parts[0]]) {
+        group = groupLabels[parts[0]];
+        prefix = parts[0];
+      }
+
       if (!groups.has(group)) groups.set(group, { prefix, fields: [] });
       groups.get(group)!.fields.push({ key, title: field.title, required: field.required, inputType: field.inputType });
     }

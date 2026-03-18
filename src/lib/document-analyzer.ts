@@ -1874,13 +1874,14 @@ export function reprocessTemplate(templateText: string): AnalysisResult {
 
 /** Convert analysis result to a template-schemas.ts compatible schema */
 export function analysisToSchema(analysis: AnalysisResult) {
-  const properties: Record<string, { type: string; title: string }> = {};
+  const properties: Record<string, { type: string; title: string; group?: string }> = {};
   const required: string[] = [];
 
   for (const field of analysis.fields) {
     properties[field.name] = {
       type: field.type === "number" || field.type === "currency" ? "number" : "string",
       title: field.title,
+      group: field.group,
     };
     if (field.required) {
       required.push(field.name);

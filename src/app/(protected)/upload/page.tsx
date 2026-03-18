@@ -82,7 +82,7 @@ export default function UploadPage() {
   const handleFile = useCallback(async (selectedFile: File) => {
     const ext = selectedFile.name.split('.').pop()?.toLowerCase();
     if (ext !== 'docx' && ext !== 'txt') {
-      toast.error('Podporovane formaty: DOCX, TXT');
+      toast.error('Podporované formáty: DOCX, TXT');
       return;
     }
 
@@ -122,13 +122,13 @@ export default function UploadPage() {
 
       if (result.fields.length > 0) {
         setStep('review');
-        toast.success(`Nalezeno ${result.fields.length} promennych poli`);
+        toast.success(`Nalezeno ${result.fields.length} proměnných polí`);
       } else {
-        toast.warning('Nebyly nalezeny zadne promenne. Zkontrolujte dokument.');
+        toast.warning('Nebyly nalezeny žádné proměnné. Zkontrolujte dokument.');
         setStep('review');
       }
     } catch (e: any) {
-      toast.error(e?.message || 'Nepodarilo se analyzovat dokument');
+      toast.error(e?.message || 'Nepodařilo se analyzovat dokument');
     } finally {
       setAnalyzing(false);
     }
@@ -282,7 +282,7 @@ export default function UploadPage() {
   // Handle final save
   const handleSave = () => {
     if (!templateName.trim()) {
-      toast.error('Zadejte nazev sablony');
+      toast.error('Zadejte název šablony');
       return;
     }
     const output = getOutputJson();
@@ -369,13 +369,13 @@ export default function UploadPage() {
 
   // Steps config
   const steps = [
-    { key: 'upload', label: 'Nahrat', icon: Upload },
+    { key: 'upload', label: 'Nahrát', icon: Upload },
     { key: 'review', label: 'Kontrola', icon: Search },
     { key: 'done', label: 'Hotovo', icon: Sparkles },
   ] as const;
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       {/* Stepper */}
       <div className="flex items-center gap-1 sm:gap-2 mb-6 sm:mb-8">
         {steps.map(({ key, label, icon: Icon }, i) => {
@@ -415,8 +415,8 @@ export default function UploadPage() {
                 <FileUp className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Nahrat dokument</h1>
-                <p className="text-sm text-muted-foreground">Nahrajte dokument a my z nej vytvorime sablonu</p>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Nahrát dokument</h1>
+                <p className="text-sm text-muted-foreground">Nahrajte dokument a my z něj vytvoříme šablonu</p>
               </div>
             </div>
           </div>
@@ -449,7 +449,7 @@ export default function UploadPage() {
                 <>
                   <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
                   <p className="text-base font-medium mb-1">Analyzuji dokument...</p>
-                  <p className="text-sm text-muted-foreground">Detekce promennych poli, podilu a entit</p>
+                  <p className="text-sm text-muted-foreground">Detekce proměnných polí, podílů a entit</p>
                 </>
               ) : (
                 <>
@@ -457,10 +457,10 @@ export default function UploadPage() {
                     <Upload className="h-7 w-7 text-primary" />
                   </div>
                   <p className="text-base font-medium mb-1">
-                    Pretahnete soubor sem
+                    Přetáhněte soubor sem
                   </p>
                   <p className="text-sm text-muted-foreground mb-4">
-                    nebo kliknete pro vyber souboru
+                    nebo klikněte pro výběr souboru
                   </p>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground/70">
                     <span className="tag-pill px-2.5 py-1 rounded-lg font-medium">.DOCX</span>
@@ -478,9 +478,9 @@ export default function UploadPage() {
             </div>
             <div className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { icon: Upload, title: 'Nahrajte dokument', desc: 'DOCX nebo textovy soubor s konkretnimi udaji' },
-                { icon: Search, title: 'Automaticka analyza', desc: 'Detekce jmen, dat, ICO, adres, podilu a castek' },
-                { icon: Sparkles, title: 'Kontrola a uprava', desc: 'Zkontrolujte, upravte a ulozte sablonu' },
+                { icon: Upload, title: 'Nahrajte dokument', desc: 'DOCX nebo textový soubor s konkrétními údaji' },
+                { icon: Search, title: 'Automatická analýza', desc: 'Detekce jmen, dat, IČO, adres, podílů a částek' },
+                { icon: Sparkles, title: 'Kontrola a úprava', desc: 'Zkontrolujte, upravte a uložte šablonu' },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
@@ -497,7 +497,7 @@ export default function UploadPage() {
 
           <div className="flex justify-start">
             <Button variant="ghost" asChild className="rounded-xl">
-              <Link href="/">
+              <Link href="/app">
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Zpet
               </Link>
@@ -515,9 +515,9 @@ export default function UploadPage() {
                 <Search className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Kontrola sablony</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Kontrola šablony</h1>
                 <p className="text-sm text-muted-foreground">
-                  {file?.name} &mdash; {activeFields.length} poli v {activeGroups.length} skupinach
+                  {file?.name} &mdash; {activeFields.length} polí v {activeGroups.length} skupinách
                   {analysis.shares.length > 0 && ` | ${analysis.shares.length} podilu`}
                 </p>
               </div>
@@ -531,10 +531,10 @@ export default function UploadPage() {
                 <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                    {lowConfidenceCount} {lowConfidenceCount === 1 ? 'pole ma' : 'poli ma'} nizkou spolehlivost
+                    {lowConfidenceCount} {lowConfidenceCount === 1 ? 'pole má' : 'polí má'} nízkou spolehlivost
                   </p>
                   <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                    Pole zvyraznena oranzove/cervene vyzaduji rucni kontrolu. Kliknete na hodnotu pro upravu.
+                    Pole zvýrazněná oranžově/červeně vyžadují ruční kontrolu. Klikněte na hodnotu pro úpravu.
                   </p>
                 </div>
               </div>
@@ -546,7 +546,7 @@ export default function UploadPage() {
             <div className="rounded-2xl border bg-card overflow-hidden">
               <div className="px-5 py-3 border-b bg-muted/30 flex items-center gap-2">
                 <Link2 className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Nalezene shody se subjekty</span>
+                <span className="text-sm font-medium">Nalezené shody se subjekty</span>
               </div>
               <div className="divide-y">
                 {Array.from(entityMatches.entries()).map(([partyRole, matches]) => {
@@ -569,7 +569,7 @@ export default function UploadPage() {
                       </div>
                       {isApplied ? (
                         <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
-                          <Check className="h-3 w-3" /> Aplikovano
+                          <Check className="h-3 w-3" /> Aplikováno
                         </span>
                       ) : (
                         <Button
@@ -615,7 +615,7 @@ export default function UploadPage() {
           {/* Template name */}
           <div className="rounded-2xl border bg-card overflow-hidden">
             <div className="px-5 py-3 border-b bg-muted/30">
-              <span className="text-sm font-medium">Nazev sablony</span>
+              <span className="text-sm font-medium">Název šablony</span>
             </div>
             <div className="p-5 space-y-4">
               <div>
@@ -626,7 +626,7 @@ export default function UploadPage() {
                   id="tpl-name"
                   value={templateName}
                   onChange={(e) => setTemplateName(e.target.value)}
-                  placeholder="Napr. Kupni smlouva"
+                  placeholder="Např. Kupní smlouva"
                   className="h-10 rounded-xl"
                 />
               </div>
@@ -638,7 +638,7 @@ export default function UploadPage() {
                   id="tpl-desc"
                   value={templateDescription}
                   onChange={(e) => setTemplateDescription(e.target.value)}
-                  placeholder="Kratky popis dokumentu"
+                  placeholder="Krátký popis dokumentu"
                   className="h-10 rounded-xl"
                 />
               </div>
@@ -649,7 +649,7 @@ export default function UploadPage() {
           <DocumentSetPicker
             onAdd={(setId, name) => {
               setSelectedSetId(setId);
-              toast.success(`Dokument bude pridan do sady "${name}"`);
+              toast.success(`Dokument bude přidán do sady "${name}"`);
             }}
           />
 
@@ -771,12 +771,12 @@ export default function UploadPage() {
                                         <button
                                           className={`italic hover:underline cursor-pointer ${confidenceColor(field.confidence)}`}
                                           onClick={() => !isRemoved && setEditingValue(field.name)}
-                                          title="Klikni pro upravu hodnoty"
+                                          title="Klikni pro úpravu hodnoty"
                                         >
                                           &ldquo;{field.example}&rdquo;
                                         </button>
                                         {field.occurrences > 1 && (
-                                          <span className="text-primary/70 ml-1">({field.occurrences} vyskytu)</span>
+                                          <span className="text-primary/70 ml-1">({field.occurrences} výskytů)</span>
                                         )}
                                         {field.source?.lineNumber && (
                                           <span className="text-muted-foreground/50 ml-1">(r. {field.source.lineNumber})</span>
@@ -792,7 +792,7 @@ export default function UploadPage() {
                                     size="icon"
                                     className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
                                     onClick={() => setEditingField(field.name)}
-                                    title="Prejmenovat pole"
+                                    title="Přejmenovat pole"
                                   >
                                     <Edit3 className="h-3 w-3" />
                                   </Button>
@@ -810,7 +810,7 @@ export default function UploadPage() {
             <div className="rounded-2xl border bg-card p-8 text-center">
               <AlertCircle className="h-8 w-8 text-muted-foreground/50 mx-auto mb-3" />
               <p className="text-sm text-muted-foreground">
-                Nebyly nalezeny zadne promenne. Zkuste nahrat dokument s konkretnimi udaji.
+                Nebyly nalezeny žádné proměnné. Zkuste nahrát dokument s konkrétními údaji.
               </p>
             </div>
           )}
@@ -819,7 +819,7 @@ export default function UploadPage() {
           {analysis.optionalSections.length > 0 && (
             <div className="rounded-2xl border bg-amber-50/50 dark:bg-amber-900/10 overflow-hidden">
               <div className="px-5 py-3 border-b border-amber-200/50 dark:border-amber-800/30">
-                <span className="text-sm font-medium">Podminene sekce</span>
+                <span className="text-sm font-medium">Podmíněné sekce</span>
               </div>
               <div className="p-5">
                 <div className="space-y-2">
@@ -872,7 +872,7 @@ export default function UploadPage() {
               className="rounded-xl"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
-              Nahrat jiny
+              Nahrát jiný
             </Button>
 
             <div className="flex gap-2 flex-col sm:flex-row">
@@ -883,14 +883,14 @@ export default function UploadPage() {
                 disabled={activeFields.length === 0}
               >
                 <Download className="h-4 w-4 mr-1.5" />
-                Stahnout JSON
+                Stáhnout JSON
               </Button>
               <Button
                 onClick={handleSave}
                 className="rounded-xl h-11 px-6"
                 disabled={activeFields.length === 0 || !templateName.trim()}
               >
-                Ulozit sablonu
+                Uložit šablonu
                 <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -905,30 +905,30 @@ export default function UploadPage() {
             <div className="inline-flex h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-green-100 dark:bg-green-900/30 items-center justify-center mx-auto mb-3 sm:mb-4">
               <CheckCircle2 className="h-7 w-7 sm:h-8 sm:w-8 text-green-600 dark:text-green-400" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Sablona vytvorena</h2>
+            <h2 className="text-xl font-semibold mb-2">Šablona vytvořena</h2>
             <p className="text-sm text-muted-foreground mb-1">
               <strong>{templateName}</strong> s {activeFields.length} poli
               {activeFields.some(f => f.occurrences > 1) && (
-                <span className="text-primary"> ({activeFields.reduce((s, f) => s + f.occurrences, 0)} vyskytu)</span>
+                <span className="text-primary"> ({activeFields.reduce((s, f) => s + f.occurrences, 0)} výskytů)</span>
               )}
             </p>
             <p className="text-xs text-muted-foreground">
-              Sablona byla ulozena a je pripravena k pouziti
+              Šablona byla uložena a je připravena k použití
             </p>
           </div>
 
           {/* Summary card */}
           <div className="rounded-2xl border bg-card overflow-hidden">
             <div className="px-5 py-3 border-b bg-muted/30">
-              <span className="text-sm font-medium">Shrnuti</span>
+              <span className="text-sm font-medium">Shrnutí</span>
             </div>
             <div className="p-5 space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Nazev</span>
+                <span className="text-muted-foreground">Název</span>
                 <span className="font-medium">{templateName}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Poli</span>
+                <span className="text-muted-foreground">Polí</span>
                 <span className="font-medium">{activeFields.length}</span>
               </div>
               <div className="flex justify-between text-sm">
@@ -943,7 +943,7 @@ export default function UploadPage() {
               )}
               {analysis?.shares && analysis.shares.length > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Podily</span>
+                  <span className="text-muted-foreground">Podíly</span>
                   <span className="font-medium">
                     {analysis.shares.length} ({analysis.shares.reduce((s, sh) => s + sh.percentage, 0)} %)
                   </span>
@@ -951,12 +951,12 @@ export default function UploadPage() {
               )}
               {analysis?.optionalSections && analysis.optionalSections.length > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Podminene sekce</span>
+                  <span className="text-muted-foreground">Podmíněné sekce</span>
                   <span className="font-medium">{analysis.optionalSections.length}</span>
                 </div>
               )}
               <div className="border-t pt-3">
-                <p className="text-xs text-muted-foreground mb-2">Skupiny poli:</p>
+                <p className="text-xs text-muted-foreground mb-2">Skupiny polí:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {activeGroups.map(g => (
                     <span key={g} className="tag-pill px-2.5 py-1 rounded-lg text-[11px] font-medium">
@@ -1019,7 +1019,7 @@ export default function UploadPage() {
               Nahrát další dokument
             </Button>
             <Button variant="ghost" asChild className="rounded-xl w-full sm:w-auto">
-              <Link href="/">
+              <Link href="/app">
                 Zpět na hlavní stránku
                 <ArrowRight className="h-4 w-4 ml-1" />
               </Link>
