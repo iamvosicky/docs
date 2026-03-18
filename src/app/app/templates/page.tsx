@@ -159,7 +159,7 @@ export default function TemplatesPage() {
                 Import
               </Button>
             </Link>
-            <Link href="/upload">
+            <Link href="/app/import">
               <Button size="sm" className="rounded-xl h-8 px-4 text-[12px] gap-1.5 font-medium shadow-sm">
                 <Plus className="h-3.5 w-3.5" />
                 Nová šablona
@@ -293,7 +293,7 @@ export default function TemplatesPage() {
           </p>
           {!search && category === 'all' && (
             <div className="flex gap-2 justify-center">
-              <Link href="/upload">
+              <Link href="/app/import">
                 <Button size="sm" className="rounded-xl h-8 px-4 text-[12px] gap-1.5 font-medium">
                   <Plus className="h-3 w-3" />
                   Vytvořit

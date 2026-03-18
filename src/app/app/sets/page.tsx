@@ -192,7 +192,7 @@ export default function DocumentSetsPage() {
                   </span>
                 </div>
                 <div className="flex gap-2">
-                  <Link href="/upload">
+                  <Link href="/app/import">
                     <Button variant="ghost" size="sm" className="rounded-xl text-xs gap-1">
                       <Upload className="h-3 w-3" />
                       Nahrát
@@ -267,7 +267,7 @@ export default function DocumentSetsPage() {
               <Plus className="h-3.5 w-3.5" />
               Nová sada
             </Button>
-            <Link href="/upload">
+            <Link href="/app/import">
               <Button variant="ghost" size="sm" className="rounded-xl h-9 px-4 gap-1.5 text-[13px] text-muted-foreground/60">
                 <Upload className="h-3.5 w-3.5" />
                 Nahrát

@@ -99,7 +99,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Link href="/upload">
+            <Link href="/app/import">
               <Button variant="outline" className="rounded-xl h-9 px-3.5 gap-1.5 text-[13px] font-medium">
                 <Upload className="h-3.5 w-3.5" />
                 Import
@@ -260,7 +260,7 @@ export default function DashboardPage() {
                 Nová sada
               </Button>
             </Link>
-            <Link href="/upload">
+            <Link href="/app/import">
               <Button variant="outline" className="rounded-xl h-10 px-5 gap-2 text-[13px] font-medium">
                 <Upload className="h-4 w-4" />
                 Importovat dokument

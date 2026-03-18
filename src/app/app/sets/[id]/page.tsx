@@ -170,7 +170,7 @@ export default function DocumentSetDetailPage({ params }: { params: Promise<{ id
           </span>
           {!adding && (
             <div className="flex items-center gap-1">
-              <Link href="/upload">
+              <Link href="/app/import">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -211,7 +211,7 @@ export default function DocumentSetDetailPage({ params }: { params: Promise<{ id
                 <Plus className="h-3.5 w-3.5" />
                 Vybrat šablonu
               </Button>
-              <Link href="/upload">
+              <Link href="/app/import">
                 <Button
                   variant="outline"
                   size="sm"
@@ -284,7 +284,7 @@ export default function DocumentSetDetailPage({ params }: { params: Promise<{ id
           <div className="p-2 max-h-64 overflow-y-auto">
             {/* Import option at the top */}
             <Link
-              href="/upload"
+              href="/app/import"
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-accent/60 transition-colors mb-1 border border-dashed border-muted-foreground/15"
             >
               <Upload className="h-4 w-4 text-muted-foreground/50 shrink-0" />
