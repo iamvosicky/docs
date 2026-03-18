@@ -18,7 +18,7 @@ import { useCompanyProfileStore } from "@/lib/company-profile-store";
 import { useFormTemplateStore } from "@/lib/form-template-store";
 import { FormTemplate } from "@/types/form-template";
 import { companyFieldMapping } from "@/types/company-profile";
-import { generatePDF, generateDOCX, downloadDocument } from "@/lib/document-generator";
+import { generateDOCX, downloadDocument } from "@/lib/document-generator";
 
 // Define JSON schema property type
 interface JsonSchemaProperty {

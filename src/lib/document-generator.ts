@@ -255,278 +255,6 @@ function buildDocumentXml(template: Template, formData: Record<string, string>):
     `<w:body>${body}</w:body></w:document>`;
 }
 
-// ─── PDF conversion (DOCX → PDF via server-side provider) ────────────────────
-
-/**
- * Convert DOCX to PDF by sending it to /api/convert-pdf.
- *
- * Returns the PDF Blob on success, or `null` if no provider is configured
- * (HTTP 501), so the caller can fall back to browser print.
- */
-async function convertDocxToPdfViaApi(docxBlob: Blob): Promise<Blob | null> {
-  const res = await fetch('/api/convert-pdf', {
-    method: 'POST',
-    headers: {
-      'Content-Type':
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    },
-    body: docxBlob,
-  });
-
-  // No provider configured → caller should fall back
-  if (res.status === 501) return null;
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(
-      `PDF conversion failed (${res.status}): ${body.error ?? 'Unknown error'}`,
-    );
-  }
-
-  return res.blob();
-}
-
-/**
- * Generate a PDF from the given template and form data.
- *
- * Pipeline:  generateDOCX(data) → /api/convert-pdf → PDF blob → download
- *
- * When no PDF provider is configured the function gracefully falls back to
- * the browser print dialog so the app still works without external services.
- */
-export async function generatePDF(
-  template: Template,
-  formData: Record<string, string>,
-): Promise<Blob | null> {
-  // Step 1: DOCX is the single source of truth
-  const docxBlob = await generateDOCX(template, formData);
-
-  // Step 2: Convert DOCX → PDF via the server-side provider
-  const pdfBlob = await convertDocxToPdfViaApi(docxBlob);
-
-  // Step 3: If conversion succeeded, return the PDF
-  if (pdfBlob) return pdfBlob;
-
-  // No provider — fall back to browser print dialog
-  await browserPrintFallback(template, formData);
-  return null;
-}
-
-// ─── Browser print fallback (renders document as HTML for Save-as-PDF) ───────
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-/** Build full HTML for built-in templates — mirrors the DOCX structure. */
-function buildPdfHtml(template: Template, formData: Record<string, string>): string {
-  const groups = groupFields(template, formData);
-  const today = new Date().toLocaleDateString('cs-CZ');
-  const date = formData['DATE'] || formData['DATUM'] || today;
-
-  let sections = '';
-  let sectionNum = 1;
-  for (const [groupName, fields] of groups) {
-    let rows = '';
-    for (const field of fields) {
-      const val = field.value
-        ? escapeHtml(field.value)
-        : '<span style="color:#bbb">_______________</span>';
-      rows += `
-        <tr>
-          <td style="padding:5px 12px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top;color:#374151;width:40%">${escapeHtml(field.title)}</td>
-          <td style="padding:5px 0;color:#111827">${val}</td>
-        </tr>`;
-    }
-    sections += `
-      <div style="margin-bottom:24px">
-        <h2 style="font-size:14px;font-weight:700;color:#1e3a5f;margin:0 0 10px 0;padding-bottom:6px;border-bottom:2px solid #e5e7eb">
-          ${toRoman(sectionNum)}. ${escapeHtml(groupName)}
-        </h2>
-        <table style="width:100%;border-collapse:collapse;font-size:12px">${rows}</table>
-      </div>`;
-    sectionNum++;
-  }
-
-  return `<!DOCTYPE html>
-<html lang="cs">
-<head>
-<meta charset="UTF-8">
-<style>
-  @page {
-    size: A4;
-    margin: 20mm 22mm 25mm 22mm;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    color: #111827;
-    line-height: 1.5;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  @media print {
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  }
-</style>
-</head>
-<body>
-  <div style="text-align:center;margin-bottom:8px">
-    <h1 style="font-size:20px;font-weight:800;letter-spacing:1px;color:#0f172a;margin-bottom:4px">
-      ${escapeHtml(template.name.toUpperCase())}
-    </h1>
-    <p style="font-size:11px;color:#6b7280;font-style:italic">${escapeHtml(template.description)}</p>
-  </div>
-
-  <div style="text-align:right;font-size:11px;color:#6b7280;margin-bottom:16px">
-    V Praze dne ${escapeHtml(date)}
-  </div>
-
-  <hr style="border:none;border-top:1px solid #d1d5db;margin-bottom:24px">
-
-  ${sections}
-
-  <div style="margin-top:48px;display:flex;justify-content:space-between">
-    <div style="width:42%;text-align:center">
-      <div style="border-top:1px solid #374151;padding-top:8px;font-size:11px;color:#6b7280">Podpis</div>
-    </div>
-    <div style="width:42%;text-align:center">
-      <div style="border-top:1px solid #374151;padding-top:8px;font-size:11px;color:#6b7280">Podpis</div>
-    </div>
-  </div>
-
-  <div style="position:fixed;bottom:8mm;left:0;right:0;text-align:center;font-size:8px;color:#d1d5db">
-    Vygenerováno: ${escapeHtml(today)} | DocGen
-  </div>
-</body>
-</html>`;
-}
-
-/** Build HTML for custom templates — preserves original document text with values filled in. */
-function buildCustomPdfHtml(template: Template, formData: Record<string, string>): string | null {
-  const templateText = getCustomTemplateText(template.id);
-  if (!templateText) return null;
-
-  // Replace all {{PLACEHOLDER}} with actual values
-  let filledText = templateText;
-  for (const [key, value] of Object.entries(formData)) {
-    filledText = filledText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value || '_______________');
-  }
-  // Replace any remaining unfilled placeholders
-  filledText = filledText.replace(/\{\{[A-Z_0-9]+\}\}/g, '_______________');
-
-  // Convert line breaks to HTML paragraphs, preserving the original structure
-  const paragraphs = filledText.split('\n').map(line => {
-    const trimmed = line.trim();
-    if (!trimmed) return '<br>';
-    return `<p style="margin:0 0 6px 0">${escapeHtml(trimmed)}</p>`;
-  }).join('\n');
-
-  return `<!DOCTYPE html>
-<html lang="cs">
-<head>
-<meta charset="UTF-8">
-<style>
-  @page {
-    size: A4;
-    margin: 20mm 22mm 25mm 22mm;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    color: #111827;
-    font-size: 12px;
-    line-height: 1.6;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  p { margin: 0 0 6px 0; }
-  @media print {
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  }
-</style>
-</head>
-<body>
-  ${paragraphs}
-  <div style="position:fixed;bottom:8mm;left:0;right:0;text-align:center;font-size:8px;color:#d1d5db">
-    Vygenerováno: ${new Date().toLocaleDateString('cs-CZ')} | DocGen
-  </div>
-</body>
-</html>`;
-}
-
-/**
- * Fallback: render the document as HTML in a hidden iframe and trigger the
- * browser's print dialog so the user can "Save as PDF" manually.
- *
- * This preserves the old behaviour when PDF_PROVIDER=none.
- */
-function browserPrintFallback(
-  template: Template,
-  formData: Record<string, string>,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    // For custom templates use their original text layout, otherwise use grouped fields
-    const html = buildCustomPdfHtml(template, formData) || buildPdfHtml(template, formData);
-
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.left = '-9999px';
-    iframe.style.top = '-9999px';
-    iframe.style.width = '210mm';
-    iframe.style.height = '297mm';
-    document.body.appendChild(iframe);
-
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!iframeDoc) {
-      document.body.removeChild(iframe);
-      reject(new Error('Could not access iframe'));
-      return;
-    }
-
-    iframeDoc.open();
-    iframeDoc.write(html);
-    iframeDoc.close();
-
-    iframe.onload = () => {
-      setTimeout(() => {
-        try {
-          iframe.contentWindow?.print();
-          setTimeout(() => {
-            document.body.removeChild(iframe);
-            resolve();
-          }, 1000);
-        } catch (e) {
-          document.body.removeChild(iframe);
-          reject(e);
-        }
-      }, 300);
-    };
-
-    // Fallback if onload doesn't fire
-    setTimeout(() => {
-      try {
-        iframe.contentWindow?.print();
-        setTimeout(() => {
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-          }
-          resolve();
-        }, 1000);
-      } catch (e) {
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
-        }
-        reject(e);
-      }
-    }, 1500);
-  });
-}
-
 // ─── Download helpers ────────────────────────────────────────────────────────
 
 export function downloadBlob(blob: Blob, filename: string): void {
@@ -541,33 +269,19 @@ export function downloadBlob(blob: Blob, filename: string): void {
 }
 
 /**
- * Download a single document in the requested format.
- *
- * For PDF: generates DOCX first, converts via the API, then downloads.
- * For DOCX: generates and downloads directly.
+ * Download a single document as DOCX.
  */
 export async function downloadDocument(
   template: Template,
   formData: Record<string, string>,
-  format: 'pdf' | 'docx'
 ): Promise<void> {
   const safeName = template.id.replace(/[^a-z0-9-]/g, '_');
-
-  if (format === 'pdf') {
-    const pdfBlob = await generatePDF(template, formData);
-    // pdfBlob is null when the browser print fallback was used (already handled)
-    if (pdfBlob) {
-      downloadBlob(pdfBlob, `${safeName}.pdf`);
-    }
-  } else {
-    const blob = await generateDOCX(template, formData);
-    downloadBlob(blob, `${safeName}.docx`);
-  }
+  const blob = await generateDOCX(template, formData);
+  downloadBlob(blob, `${safeName}.docx`);
 }
 
 /**
- * Download all documents as a ZIP archive.
- * Includes both DOCX and PDF for each template when a provider is available.
+ * Download all documents as a ZIP archive (DOCX only).
  */
 export async function downloadAllAsZip(
   templates: Template[],
@@ -577,23 +291,9 @@ export async function downloadAllAsZip(
 
   for (const template of templates) {
     const safeName = template.id.replace(/[^a-z0-9-]/g, '_');
-
-    // DOCX is always included
     const docxBlob = await generateDOCX(template, formData);
     const docxBuffer = await docxBlob.arrayBuffer();
     zip.file(`${safeName}.docx`, docxBuffer);
-
-    // Try to include PDF (silently skip if no provider)
-    try {
-      const pdfBlob = await convertDocxToPdfViaApi(docxBlob);
-      if (pdfBlob) {
-        const pdfBuffer = await pdfBlob.arrayBuffer();
-        zip.file(`${safeName}.pdf`, pdfBuffer);
-      }
-    } catch {
-      // PDF conversion failed — ZIP still contains the DOCX
-      console.warn(`PDF conversion skipped for ${safeName}`);
-    }
   }
 
   const blob = zip.generate({

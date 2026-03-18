@@ -29,17 +29,17 @@ export default function DocumentsPage() {
     toast.success(`„${doc.name}" odstraněn`);
   };
 
-  const handleDownload = async (doc: GeneratedDocument, format: 'docx' | 'pdf') => {
+  const handleDownload = async (doc: GeneratedDocument) => {
     const template = getTemplate(doc.templateId);
     if (!template) {
       toast.error('Šablona nenalezena');
       return;
     }
-    const key = `${doc.id}-${format}`;
+    const key = `${doc.id}-docx`;
     setDownloadingId(key);
     try {
-      await downloadDocument(template, doc.formData, format);
-      toast.success(`${doc.name} (${format.toUpperCase()}) stažen`);
+      await downloadDocument(template, doc.formData);
+      toast.success(`${doc.name} stažen`);
     } catch {
       toast.error('Stahování selhalo');
     } finally {
@@ -128,18 +128,8 @@ export default function DocumentsPage() {
                             variant="ghost"
                             size="sm"
                             className="h-7 rounded-xl text-[12px] gap-1"
-                            disabled={downloadingId === `${doc.id}-pdf`}
-                            onClick={() => handleDownload(doc, 'pdf')}
-                          >
-                            {downloadingId === `${doc.id}-pdf` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-                            PDF
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 rounded-xl text-[12px] gap-1"
                             disabled={downloadingId === `${doc.id}-docx`}
-                            onClick={() => handleDownload(doc, 'docx')}
+                            onClick={() => handleDownload(doc)}
                           >
                             {downloadingId === `${doc.id}-docx` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
                             DOCX

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { getTemplate, getTemplates, getAllTemplates, type Template, getFieldInputType, getFieldPlaceholder, getFieldHint, validateField, type FieldInputType } from '@/lib/template-schemas';
 import { downloadDocument, downloadAllAsZip } from '@/lib/document-generator';
+import { IcoInputWithLookup } from '@/components/ico-input-with-lookup';
 import Link from 'next/link';
 
 function GenerateContent() {
@@ -31,6 +32,7 @@ function GenerateContent() {
   const [step, setStep] = useState(isMultiDoc ? 1 : 2);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(initialTemplateIds));
   const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [autofilledFields, setAutofilledFields] = useState<Set<string>>(new Set());
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
@@ -114,6 +116,21 @@ function GenerateContent() {
       if (!groups.has(group)) groups.set(group, []);
       groups.get(group)!.push({ key, title: field.title, required: field.required, inputType: field.inputType });
     }
+
+    // Sort fields within each group: IČO first, then name, then address, then rest
+    for (const [, groupFields] of groups) {
+      groupFields.sort((a, b) => {
+        const priority = (f: typeof a) => {
+          if (f.inputType === 'ico') return 0;
+          const k = f.key.toUpperCase();
+          if (k.includes('NAME') || k.includes('JMENO') || k.includes('NAZEV')) return 1;
+          if (k.includes('ADDRESS') || k.includes('ADRESA') || k.includes('SIDLO')) return 2;
+          return 3;
+        };
+        return priority(a) - priority(b);
+      });
+    }
+
     return groups;
   }, [mergedFields]);
 
@@ -297,7 +314,10 @@ function GenerateContent() {
       {/* STEP 2: Fill in fields */}
       {step === 2 && (
         <div className="space-y-5">
-          {Array.from(groupedFields.entries()).map(([groupName, fields]) => (
+          {Array.from(groupedFields.entries()).map(([groupName, fields]) => {
+            const groupPrefix = fields[0]?.key.split('_')[0] || '';
+
+            return (
             <div key={groupName} className="rounded-2xl border bg-card overflow-visible">
               <div className="px-5 py-3 border-b bg-muted/30 rounded-t-2xl">
                 <span className="text-sm font-medium">{groupName}</span>
@@ -352,14 +372,19 @@ function GenerateContent() {
                   };
 
                   // Full width for textarea fields
-                  const isFullWidth = field.inputType === 'textarea';
+                  const isFullWidth = field.inputType === 'textarea' || field.inputType === 'ico';
+
+                  const isAutofilled = autofilledFields.has(field.key);
 
                   return (
                     <div key={field.key} className={isFullWidth ? 'sm:col-span-2' : ''}>
                       <Label htmlFor={field.key} className="text-xs font-medium mb-1.5 block text-muted-foreground">
                         {field.title}
                         {field.required && <span className="text-destructive ml-0.5">*</span>}
-                        {hint && !error && (
+                        {isAutofilled && (
+                          <span className="ml-1.5 text-[9px] px-1 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium">ARES</span>
+                        )}
+                        {hint && !error && !isAutofilled && (
                           <span className="ml-1.5 text-[10px] text-muted-foreground/60 font-normal">{hint}</span>
                         )}
                       </Label>
@@ -425,6 +450,26 @@ function GenerateContent() {
                             error ? 'border-destructive focus-visible:ring-destructive/30' : ''
                           }`}
                         />
+                      ) : field.inputType === 'ico' ? (
+                        <IcoInputWithLookup
+                          fieldKey={field.key}
+                          value={formValues[field.key] || ''}
+                          groupFieldKeys={fields.map(f => f.key)}
+                          groupPrefix={groupPrefix}
+                          placeholder={placeholder}
+                          disabled={isGenerating}
+                          hasError={!!error}
+                          onChange={(val) => handleChange(val)}
+                          onAutofill={(values) => {
+                            setFormValues(prev => ({ ...prev, ...values }));
+                            setAutofilledFields(prev => {
+                              const next = new Set(prev);
+                              Object.keys(values).forEach(k => { if (values[k]) next.add(k); });
+                              return next;
+                            });
+                          }}
+                          onBlur={handleBlur}
+                        />
                       ) : (
                         <Input
                           id={field.key}
@@ -433,7 +478,7 @@ function GenerateContent() {
                           onBlur={handleBlur}
                           placeholder={placeholder}
                           disabled={isGenerating}
-                          maxLength={field.inputType === 'ico' ? 8 : field.inputType === 'rc' ? 11 : undefined}
+                          maxLength={field.inputType === 'rc' ? 11 : undefined}
                           className={`h-10 rounded-xl text-sm ${
                             error ? 'border-destructive focus-visible:ring-destructive/30' : ''
                           }`}
@@ -454,7 +499,7 @@ function GenerateContent() {
                 })}
               </div>
             </div>
-          ))}
+          ); })}
 
           {/* Selected docs summary (compact) */}
           <div className="rounded-2xl border bg-muted/30 p-4">
@@ -517,7 +562,7 @@ function GenerateContent() {
               {selectedTemplates.length === 1 ? 'Dokument vygenerován' : `${selectedTemplates.length} dokumentů vygenerováno`}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Stáhněte ve formátu DOCX nebo PDF
+              Stáhněte ve formátu DOCX
             </p>
           </div>
 
@@ -542,32 +587,12 @@ function GenerateContent() {
                       variant="outline"
                       size="sm"
                       className="rounded-lg text-xs h-9 sm:h-8 flex-1 sm:flex-none min-w-0"
-                      disabled={downloadingId === `${template.id}-pdf`}
-                      onClick={async () => {
-                        setDownloadingId(`${template.id}-pdf`);
-                        try {
-                          await downloadDocument(template, formValues, 'pdf');
-                          toast.success(`${template.name} (PDF) stažen`);
-                        } catch (e) {
-                          toast.error('Stahování selhalo');
-                        } finally {
-                          setDownloadingId(null);
-                        }
-                      }}
-                    >
-                      {downloadingId === `${template.id}-pdf` ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Download className="h-3 w-3 mr-1" />}
-                      PDF
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-lg text-xs h-9 sm:h-8 flex-1 sm:flex-none min-w-0"
                       disabled={downloadingId === `${template.id}-docx`}
                       onClick={async () => {
                         setDownloadingId(`${template.id}-docx`);
                         try {
-                          await downloadDocument(template, formValues, 'docx');
-                          toast.success(`${template.name} (DOCX) stažen`);
+                          await downloadDocument(template, formValues);
+                          toast.success(`${template.name} stažen`);
                         } catch (e) {
                           toast.error('Stahování selhalo');
                         } finally {

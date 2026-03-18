@@ -4,7 +4,7 @@ import PizZip from "pizzip";
 
 export interface DetectedField {
   name: string;
-  type: "text" | "date" | "number" | "currency" | "ico" | "rc" | "textarea" | "account";
+  type: "text" | "date" | "number" | "currency" | "ico" | "rc" | "textarea" | "account" | "percentage";
   title: string;
   description: string;
   example: string;
@@ -20,6 +20,32 @@ export interface DetectedField {
   writtenForm?: string;
   /** For currency fields: the written form was found in the document (not auto-generated) */
   writtenFormFromDocument?: boolean;
+  /** Confidence score 0-1 for extracted value accuracy */
+  confidence: number;
+  /** Source location: which page/section the value was found in */
+  source?: { page?: number; section?: string; lineNumber?: number };
+}
+
+/** Detected ownership share in the company */
+export interface DetectedShare {
+  /** Share identifier (e.g. "Podíl č. 1") */
+  label: string;
+  /** Share number/index */
+  number: number;
+  /** Size as percentage */
+  percentage: number;
+  /** Capital contribution amount in CZK */
+  capitalContribution: number;
+  /** Capital contribution in words */
+  capitalContributionWritten?: string;
+  /** Share type (e.g. "základní") */
+  shareType: string;
+  /** Owner role (maps to a party role) */
+  ownerRole?: string;
+  /** Whether this share was fully paid */
+  isPaidUp: boolean;
+  /** Raw text from which this share was extracted */
+  sourceText: string;
 }
 
 export interface EntityGroup {
@@ -72,6 +98,8 @@ export interface AnalysisResult {
   parties: ContractParty[];
   /** Detected contract type */
   contractType: ContractType;
+  /** Detected ownership shares */
+  shares: DetectedShare[];
   optionalSections: string[];
   notes: string[];
   originalText: string;
@@ -785,6 +813,79 @@ const CONTRACT_ROLE_PAIRS: Record<ContractType, [string, string] | null> = {
 
 // ─── Full-span detection helpers ───
 
+// ─── Share / ownership detection ───
+
+/**
+ * Detect ownership shares from contract text.
+ * Handles Czech legal patterns like:
+ *   "základního podílu č. 1 ve Společnosti o velikosti 5 %"
+ *   "podíl o velikosti 80 %, jenž odpovídá vkladu ... ve výši 800.000,- Kč"
+ */
+function detectShares(text: string): DetectedShare[] {
+  const shares: DetectedShare[] = [];
+
+  // Pattern: "podílu č. N ... o velikosti X % ... vkladu ... ve výši Y Kč"
+  // Flexible enough to handle multiline share descriptions
+  const shareBlockRegex = /(?:základního\s+)?podílu?\s+č(?:íslo)?\.?\s*(\d+)\s+(?:ve\s+)?(?:Společnosti\s+)?o\s+velikosti\s+(\d+)\s*%[^;]*?(?:vkladu[^;]*?ve\s+výši\s+)([\d\s.,]+)\s*(?:,-\s*)?Kč(?:\s*\(\s*(?:slovy|slovem)[:\s]*([^)]+)\))?/gi;
+
+  let match: RegExpExecArray | null;
+  while ((match = shareBlockRegex.exec(text)) !== null) {
+    const number = parseInt(match[1], 10);
+    const percentage = parseInt(match[2], 10);
+    const capitalStr = match[3].replace(/\s/g, "").replace(/\./g, "").replace(/,/g, ".");
+    const capitalContribution = Math.round(parseFloat(capitalStr) || 0);
+    const capitalWritten = match[4]?.trim();
+
+    // Check if fully paid
+    const afterMatch = text.slice(match.index, match.index + match[0].length + 200);
+    const isPaidUp = /(?:v\s+plné\s+výši\s+splacen|splacen\w*\s+v\s+plné|zcela\s+splacen)/i.test(afterMatch);
+
+    // Determine share type from context
+    const beforeMatch = text.slice(Math.max(0, match.index - 50), match.index);
+    const shareType = /základní/i.test(beforeMatch) || /základní/i.test(match[0]) ? "základní" : "jiný";
+
+    shares.push({
+      label: `Podíl č. ${number}`,
+      number,
+      percentage,
+      capitalContribution,
+      capitalContributionWritten: capitalWritten,
+      shareType,
+      isPaidUp,
+      sourceText: match[0].trim(),
+    });
+  }
+
+  // Fallback: simpler pattern for "podíl o velikosti X %"
+  if (shares.length === 0) {
+    const simpleRegex = /podílu?\s+o\s+velikosti\s+(\d+)\s*%/gi;
+    let simpleIdx = 1;
+    while ((match = simpleRegex.exec(text)) !== null) {
+      const percentage = parseInt(match[1], 10);
+      shares.push({
+        label: `Podíl č. ${simpleIdx}`,
+        number: simpleIdx,
+        percentage,
+        capitalContribution: 0,
+        shareType: "základní",
+        isPaidUp: false,
+        sourceText: match[0].trim(),
+      });
+      simpleIdx++;
+    }
+  }
+
+  // Determine owner from context (look for role zones)
+  if (shares.length > 0) {
+    const ownerMatch = text.match(/(?:Převodce|převodce)\s+je\s+(?:jediným\s+)?(?:vlastníkem|společníkem)/i);
+    if (ownerMatch) {
+      shares.forEach(s => { s.ownerRole = "prevodce"; });
+    }
+  }
+
+  return shares;
+}
+
 function countOccurrences(text: string, value: string): number {
   const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const matches = text.match(new RegExp(escaped, "g"));
@@ -831,6 +932,7 @@ function detectReplacements(text: string): {
   replacements: { original: string; placeholder: string; field: DetectedField }[];
   entities: EntityGroup[];
   parties: ContractParty[];
+  shares: DetectedShare[];
   contractType: ContractType;
   /** Maps merged roles to their final role (e.g. "company" → "seller") */
   roleRemapping: Map<string, string>;
@@ -878,6 +980,8 @@ function detectReplacements(text: string): {
     defaultGroup: string,
     description: string,
     required: boolean,
+    confidence: number = 0.9,
+    source?: { page?: number; section?: string; lineNumber?: number },
   ) => {
     // Deduplication: if we already have this exact value, just ensure count is right
     if (valueToField.has(value)) {
@@ -905,6 +1009,17 @@ function detectReplacements(text: string): {
       entityFields.get(role)!.add(name);
     }
 
+    // Calculate confidence: structured patterns (IČO, RC) get high confidence,
+    // names and addresses get lower confidence since they rely on heuristics
+    let finalConfidence = confidence;
+    if (type === "ico" || type === "rc" || type === "account") finalConfidence = Math.max(confidence, 0.95);
+    else if (type === "currency" || type === "date") finalConfidence = Math.max(confidence, 0.85);
+    else if (namePrefix === "name") finalConfidence = Math.min(confidence, 0.75);
+    else if (namePrefix === "address") finalConfidence = Math.min(confidence, 0.8);
+
+    // Estimate line number for source tracking
+    const lineNumber = source?.lineNumber ?? (text.slice(0, text.indexOf(value)).split("\n").length);
+
     replacements.push({
       original: value,
       placeholder: `{{${name}}}`,
@@ -919,6 +1034,8 @@ function detectReplacements(text: string): {
         originalText: value,
         occurrences,
         entity: role || undefined,
+        confidence: finalConfidence,
+        source: { page: source?.page ?? 1, section: source?.section, lineNumber },
       },
     });
   };
@@ -1443,12 +1560,21 @@ function detectReplacements(text: string): {
     optionalSections.push("Smluvní pokuty");
   }
 
-  return { replacements, entities, parties, contractType, roleRemapping, notes, optionalSections };
+  // ──────────────────────────────────────────────────
+  // Detect ownership shares
+  // ──────────────────────────────────────────────────
+  const shares = detectShares(text);
+  if (shares.length > 0) {
+    const totalPct = shares.reduce((s, sh) => s + sh.percentage, 0);
+    notes.push(`Nalezeno ${shares.length} podílů (celkem ${totalPct} %)`);
+  }
+
+  return { replacements, entities, parties, shares, contractType, roleRemapping, notes, optionalSections };
 }
 
 /** Analyze plain text — replaces values with placeholders, nothing else */
 export function analyzeDocument(text: string): AnalysisResult {
-  const { replacements, entities, parties, contractType, roleRemapping, notes, optionalSections } = detectReplacements(text);
+  const { replacements, entities, parties, shares, contractType, roleRemapping, notes, optionalSections } = detectReplacements(text);
 
   // Apply replacements to a copy of the original text — only swap values, preserve everything else
   let templateText = text;
@@ -1477,7 +1603,7 @@ export function analyzeDocument(text: string): AnalysisResult {
     notes.push(`Nalezeno ${fields.length} unikátních polí (${totalOccurrences} výskytů) v ${groups.length} skupinách.`);
   }
 
-  return { templateText, fields, groups, entities, parties, contractType, optionalSections, notes, originalText: text };
+  return { templateText, fields, groups, entities, parties, shares, contractType, optionalSections, notes, originalText: text };
 }
 
 /**
@@ -1488,7 +1614,7 @@ export function analyzeDocument(text: string): AnalysisResult {
  */
 export function analyzeDocx(arrayBuffer: ArrayBuffer): AnalysisResult {
   const text = extractTextFromDocx(arrayBuffer);
-  const { replacements, entities, parties, contractType, roleRemapping, notes, optionalSections } = detectReplacements(text);
+  const { replacements, entities, parties, shares, contractType, roleRemapping, notes, optionalSections } = detectReplacements(text);
 
   // Apply replacements to plain text preview
   let templateText = text;
@@ -1536,7 +1662,7 @@ export function analyzeDocx(arrayBuffer: ArrayBuffer): AnalysisResult {
     notes.push(`Nalezeno ${fields.length} unikátních polí (${totalOccurrences} výskytů) v ${groups.length} skupinách.`);
   }
 
-  return { templateText, fields, groups, entities, parties, contractType, optionalSections, notes, originalText: text, templateDocxBase64 };
+  return { templateText, fields, groups, entities, parties, shares, contractType, optionalSections, notes, originalText: text, templateDocxBase64 };
 }
 
 /**
@@ -1560,7 +1686,7 @@ export function reprocessTemplate(templateText: string): AnalysisResult {
   });
 
   // Run standard detection on the text with placeholders removed
-  const { replacements, entities, parties, contractType, roleRemapping, notes, optionalSections } = detectReplacements(safeText);
+  const { replacements, entities, parties, shares, contractType, roleRemapping, notes, optionalSections } = detectReplacements(safeText);
 
   // Apply new replacements
   let result = safeText;
@@ -1598,6 +1724,7 @@ export function reprocessTemplate(templateText: string): AnalysisResult {
     groups,
     entities,
     parties,
+    shares,
     contractType,
     optionalSections,
     notes,

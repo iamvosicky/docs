@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { Building2, User, Plus, Pencil, Trash2, Star, ArrowLeft } from 'lucide-react';
+import { Building2, User, Plus, Pencil, Trash2, Star, ArrowLeft, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { IcoLookup, type IcoLookupResult } from '@/components/ico-lookup';
 
 type FilterType = 'all' | 'company' | 'person';
 
@@ -231,6 +232,41 @@ export default function EntitiesPage() {
           )}
 
           <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+            {/* ARES Lookup for companies */}
+            {formType === 'company' && !editing && (
+              <div className="rounded-xl border bg-muted/20 p-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Search className="h-4 w-4 text-primary" />
+                  Vyhledat podle IČO
+                </div>
+                <IcoLookup
+                  onResult={(result: IcoLookupResult) => {
+                    const c = result.company;
+                    const overrides = result.overrides;
+                    // Auto-fill form fields from ARES data
+                    setFormLabel(overrides.name || c.name);
+                    setFormData(prev => ({
+                      ...prev,
+                      name: overrides.name || c.name,
+                      ico: c.ico,
+                      dic: overrides.dic || c.dic || '',
+                      address: overrides.address || c.address,
+                      city: c.addressParts.city || '',
+                      zip: c.addressParts.postalCode?.replace(/\s/g, '') || '',
+                      country: c.addressParts.country || '',
+                      representative: c.executives[0]?.name || '',
+                    }));
+                    toast.success(`Údaje z ARES načteny pro ${c.name}`);
+                  }}
+                  onClear={() => {
+                    setFormData({ ...emptyCompanyData } as any);
+                    setFormLabel('');
+                  }}
+                  compact
+                />
+              </div>
+            )}
+
             {/* Label */}
             <div>
               <Label className="text-xs text-muted-foreground">Název subjektu <span className="text-destructive">*</span></Label>
