@@ -2,10 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import Link from 'next/link';
 import {
-  FileText, ArrowRight, Upload, Layers, Plus, Clock,
-  Play, Trash2
+  FileText, ArrowRight, Upload, Layers, Plus,
+  MoreHorizontal, Pencil, Trash2, FolderOpen
 } from 'lucide-react';
 import { getAllTemplates, getCustomTemplates } from '@/lib/template-schemas';
 import { useDocumentSetStore } from '@/lib/document-set-store';
@@ -13,32 +20,19 @@ import { predefinedSets, type PredefinedSet } from '@/lib/predefined-sets';
 import { getTemplate } from '@/lib/template-schemas';
 import { toast } from 'sonner';
 
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'právě teď';
-  if (mins < 60) return `před ${mins} min`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `před ${hours} h`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return 'včera';
-  if (days < 7) return `před ${days} dny`;
-  return new Date(iso).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' });
-}
-
 function docLabel(n: number): string {
-  if (n === 0) return 'Prázdná';
+  if (n === 0) return 'Prázdná sada';
   if (n === 1) return '1 dokument';
   if (n < 5) return `${n} dokumenty`;
   return `${n} dokumentů`;
 }
 
-// Max docs to preview in card
 const MAX_PREVIEW = 3;
 
 export default function DashboardPage() {
   const { sets, addSet, addTemplateToSet, deleteSet } = useDocumentSetStore();
   const [isClient, setIsClient] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => { setIsClient(true); }, []);
 
@@ -51,11 +45,11 @@ export default function DashboardPage() {
     toast.success(`„${preset.name}" vytvořena`);
   };
 
-  const handleDelete = (e: React.MouseEvent, id: string, name: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    deleteSet(id);
-    toast.success(`„${name}" smazána`);
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteSet(deleteTarget.id);
+    toast.success(`„${deleteTarget.name}" smazána`);
+    setDeleteTarget(null);
   };
 
   const sortedSets = isClient
@@ -67,9 +61,7 @@ export default function DashboardPage() {
   return (
     <div className="max-w-4xl mx-auto pb-20">
 
-      {/* ═══════════════════════════════════════════════════════
-          HEADER — consistent CTAs
-          ═══════════════════════════════════════════════════════ */}
+      {/* ─── HEADER ─── */}
       <div className="pt-6 pb-8">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -98,9 +90,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════
-          SETS GRID — equal height cards
-          ═══════════════════════════════════════════════════════ */}
+      {/* ─── SETS GRID ─── */}
       {isClient && sortedSets.length > 0 && (
         <section className="mb-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -113,93 +103,116 @@ export default function DashboardPage() {
               const hasDocuments = docSet.templateIds.length > 0;
 
               return (
-                <Link
-                  key={docSet.id}
-                  href={hasDocuments
-                    ? `/app/generate?templates=${docSet.templateIds.join(',')}`
-                    : `/app/sets/${docSet.id}`
-                  }
-                  className="group relative flex flex-col rounded-2xl bg-card border border-border/60 p-5 min-h-[200px] transition-all duration-200 hover:border-border hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-white/[0.02] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  {/* Delete — hover only */}
-                  <button
-                    onClick={(e) => handleDelete(e, docSet.id, docSet.name)}
-                    className="absolute top-3.5 right-3.5 h-7 w-7 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all z-10"
-                    title="Smazat sadu"
-                    aria-label={`Smazat sadu ${docSet.name}`}
+                <div key={docSet.id} className="relative">
+                  <Link
+                    href={hasDocuments
+                      ? `/app/generate?templates=${docSet.templateIds.join(',')}`
+                      : `/app/sets/${docSet.id}`
+                    }
+                    className="group flex flex-col rounded-2xl bg-card border border-border/60 p-5 min-h-[188px] transition-all duration-200 hover:border-border hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-white/[0.02] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
+                    {/* Top: Icon + Title + Meta */}
+                    <div className="flex items-start gap-3.5 mb-3">
+                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        hasDocuments ? 'bg-primary/10' : 'bg-muted'
+                      }`}>
+                        {hasDocuments ? (
+                          <FolderOpen className="h-[18px] w-[18px] text-primary" />
+                        ) : (
+                          <Layers className="h-[18px] w-[18px] text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1 pr-8">
+                        <h3 className="text-[15px] font-semibold leading-snug text-foreground truncate">
+                          {docSet.name}
+                        </h3>
+                        <p className="text-[12px] text-muted-foreground mt-0.5">
+                          {docLabel(docSet.templateIds.length)}
+                        </p>
+                      </div>
+                    </div>
 
-                  {/* Top: Icon + Title + Meta */}
-                  <div className="flex items-start gap-3.5 mb-4">
-                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
-                      hasDocuments
-                        ? 'bg-primary/10'
-                        : 'bg-muted'
-                    }`}>
-                      {hasDocuments ? (
-                        <Play className="h-4 w-4 text-primary ml-0.5" />
-                      ) : (
-                        <Layers className="h-4 w-4 text-muted-foreground" />
+                    {/* Middle: Document preview */}
+                    <div className="flex-1 space-y-1.5">
+                      {previewDocs.map((doc, i) => (
+                        <div key={i} className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                          <FileText className="h-3 w-3 shrink-0 text-muted-foreground/50" />
+                          <span className="truncate">{doc!.name}</span>
+                        </div>
+                      ))}
+                      {remaining > 0 && (
+                        <p className="text-[11px] text-muted-foreground/60 pl-5">
+                          +{remaining} {remaining < 5 ? 'další' : 'dalších'}
+                        </p>
+                      )}
+                      {!hasDocuments && (
+                        <p className="text-[12px] text-muted-foreground/60">
+                          Přidejte dokumenty do sady
+                        </p>
                       )}
                     </div>
-                    <div className="min-w-0 flex-1 pr-6">
-                      <h3 className="text-[15px] font-semibold leading-snug text-foreground truncate">{docSet.name}</h3>
-                      <p className="text-[12px] text-muted-foreground mt-0.5">
-                        {docLabel(docSet.templateIds.length)}
-                      </p>
+
+                    {/* Bottom: hover CTA */}
+                    <div className="pt-3 mt-auto border-t border-border/30 flex items-center justify-end">
+                      <span className="text-[12px] text-muted-foreground/0 group-hover:text-primary font-medium flex items-center gap-1 transition-colors">
+                        {hasDocuments ? 'Otevřít' : 'Upravit'}
+                        <ArrowRight className="h-3 w-3" />
+                      </span>
                     </div>
-                  </div>
+                  </Link>
 
-                  {/* Middle: Document preview (fixed 3 slots) */}
-                  <div className="flex-1 space-y-1.5 mb-4">
-                    {previewDocs.map((doc, i) => (
-                      <div key={i} className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                        <FileText className="h-3 w-3 shrink-0 text-muted-foreground/50" />
-                        <span className="truncate">{doc!.name}</span>
-                      </div>
-                    ))}
-                    {remaining > 0 && (
-                      <p className="text-[11px] text-muted-foreground/60 pl-5">
-                        +{remaining} {remaining < 5 ? 'další' : 'dalších'}
-                      </p>
-                    )}
-                    {!hasDocuments && (
-                      <p className="text-[12px] text-muted-foreground/60 italic">
-                        Klikněte pro přidání dokumentů
-                      </p>
-                    )}
+                  {/* Context menu — top right, always rendered but only visible on hover */}
+                  <div className="absolute top-3 right-3 z-10">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className="h-7 w-7 rounded-lg flex items-center justify-center opacity-0 hover:opacity-100 focus-visible:opacity-100 group-hover:opacity-60 text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
+                          aria-label={`Akce pro ${docSet.name}`}
+                          onClick={(e) => e.preventDefault()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44 rounded-xl">
+                        <DropdownMenuItem asChild className="rounded-lg text-[13px] gap-2 cursor-pointer">
+                          <Link href={`/app/sets/${docSet.id}`}>
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                            Upravit sadu
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="rounded-lg text-[13px] gap-2 cursor-pointer text-destructive focus:text-destructive"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setDeleteTarget({ id: docSet.id, name: docSet.name });
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Smazat
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-
-                  {/* Bottom: Timestamp — always at bottom via flex */}
-                  <div className="pt-3 border-t border-border/40">
-                    <span className="text-[11px] text-muted-foreground/60 flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {timeAgo(docSet.updatedAt)}
-                    </span>
-                  </div>
-                </Link>
+                </div>
               );
             })}
 
-            {/* New set card — same height as others */}
+            {/* New set card */}
             <Link
               href="/app/sets"
-              className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/50 p-5 min-h-[200px] text-center transition-all duration-200 hover:border-primary/40 hover:bg-primary/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="group flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/50 p-5 min-h-[188px] text-center transition-all duration-200 hover:border-primary/40 hover:bg-primary/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center mb-3">
-                <Plus className="h-4 w-4 text-muted-foreground" />
+              <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
+                <Plus className="h-[18px] w-[18px] text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
-              <span className="text-[14px] font-medium text-muted-foreground">Nová sada</span>
+              <span className="text-[14px] font-medium text-muted-foreground group-hover:text-foreground transition-colors">Nová sada</span>
             </Link>
           </div>
         </section>
       )}
 
-      {/* ═══════════════════════════════════════════════════════
-          EMPTY STATE
-          ═══════════════════════════════════════════════════════ */}
+      {/* ─── EMPTY STATE ─── */}
       {isClient && sortedSets.length === 0 && (
         <section className="rounded-2xl border bg-card p-10 sm:p-14 text-center mb-12">
           <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
@@ -229,9 +242,7 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* ═══════════════════════════════════════════════════════
-          PRESETS
-          ═══════════════════════════════════════════════════════ */}
+      {/* ─── PRESETS ─── */}
       {isClient && availablePresets.length > 0 && (
         <section>
           <div className="mb-4">
@@ -263,6 +274,26 @@ export default function DashboardPage() {
           </div>
         </section>
       )}
+
+      {/* ─── DELETE CONFIRMATION ─── */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <DialogContent className="sm:max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Smazat tuto sadu?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Sada <strong>„{deleteTarget?.name}"</strong> bude trvale smazána. Tato akce je nevratná.
+          </p>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" className="rounded-xl" onClick={() => setDeleteTarget(null)}>
+              Zrušit
+            </Button>
+            <Button variant="destructive" className="rounded-xl" onClick={confirmDelete}>
+              Smazat
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
