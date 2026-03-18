@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/auth/auth-provider';
 import { Button } from '@/components/ui/button';
 import {
-  FolderOpen, Layers, Users, Settings,
+  FolderOpen, Layers, Users, Settings, Upload,
   Plus, ChevronLeft, ChevronRight,
   FileText as LogoIcon
 } from 'lucide-react';
@@ -66,6 +66,7 @@ const mainNav: NavItem[] = [
   { href: '/app', label: 'Sady', icon: Layers },
   { href: '/app/documents', label: 'Dokumenty', icon: FolderOpen },
   { href: '/app/settings/entities', label: 'Subjekty', icon: Users },
+  { href: '/upload', label: 'Import', icon: Upload },
 ];
 
 const teamNav: NavItem[] = [];
