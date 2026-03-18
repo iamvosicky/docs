@@ -82,11 +82,14 @@ export interface ContractParty {
 /** Detected contract type */
 export type ContractType =
   | "purchase"    // kupní smlouva
+  | "transfer"    // smlouva o převodu podílu / akcií
   | "work"        // smlouva o dílo
   | "lease"       // nájemní smlouva
   | "employment"  // pracovní smlouva / DPP / DPČ
   | "power"       // plná moc
   | "loan"        // smlouva o půjčce / zápůjčce
+  | "assignment"  // smlouva o postoupení
+  | "donation"    // darovací smlouva
   | "other";
 
 export interface AnalysisResult {
@@ -495,21 +498,60 @@ interface FieldContext {
  *  Roles like "representative", "shareholder", "administrator" are NOT auto-detected.
  *  They are only used if the document explicitly defines them via (dále jen „X").
  *  This prevents false entity creation (rule 8). */
+// Czech grammatical case stems — patterns match all declension forms
+// e.g. nabyvatel/nabyvatele/nabyvatelem/nabyvateli all match /nabyvatel/
 const ROLE_MAP: { pattern: RegExp; role: string }[] = [
-  { pattern: /(?:kupující|objednatel)/, role: "buyer" },
-  { pattern: /(?:prodávající|zhotovitel|dodavatel|poskytovatel)/, role: "seller" },
+  { pattern: /(?:kupujíc|objednatel)/, role: "buyer" },
+  { pattern: /(?:prodávajíc|zhotovitel|dodavatel|poskytovatel)/, role: "seller" },
   { pattern: /(?:nabyvatel)/, role: "nabyvatel" },
-  { pattern: /(?:převodce)/, role: "prevodce" },
+  { pattern: /(?:převodc|převodce)/, role: "prevodce" },
   { pattern: /(?:zaměstnavatel)/, role: "employer" },
-  { pattern: /(?:zaměstnanec|pracovník)/, role: "employee" },
+  { pattern: /(?:zaměstnanc|pracovník)/, role: "employee" },
   { pattern: /(?:zmocnitel|zmocňovatel)/, role: "principal" },
-  { pattern: /(?:zmocněnec)/, role: "attorney" },
-  { pattern: /(?:nájemce)/, role: "tenant" },
+  { pattern: /(?:zmocněnc)/, role: "attorney" },
+  { pattern: /(?:nájemn|nájemce|nájemci|nájemcem)/, role: "tenant" },
   { pattern: /(?:pronajímatel)/, role: "landlord" },
   { pattern: /(?:věřitel)/, role: "creditor" },
   { pattern: /(?:dlužník)/, role: "debtor" },
+  { pattern: /(?:postupitel)/, role: "assignor" },
+  { pattern: /(?:postupník)/, role: "assignee" },
+  { pattern: /(?:přejímatel)/, role: "receiver" },
+  { pattern: /(?:dárce|dárc)/, role: "donor" },
+  { pattern: /(?:obdarovan)/, role: "donee" },
+  { pattern: /(?:ručitel)/, role: "guarantor" },
   { pattern: /(?:právnická\s*osoba)/, role: "company" },
+  // English fallbacks (for bilingual documents)
+  { pattern: /(?:transferor)/, role: "prevodce" },
+  { pattern: /(?:transferee|acquir)/, role: "nabyvatel" },
+  { pattern: /(?:party\s*a|smluvní\s*strana\s*a)/i, role: "party_a" },
+  { pattern: /(?:party\s*b|smluvní\s*strana\s*b)/i, role: "party_b" },
 ];
+
+/**
+ * Role alias map — normalizes semantically equivalent roles.
+ * Key: detected role slug, Value: canonical role it maps to.
+ *
+ * This ensures "nabyvatel" and "buyer" in a purchase context,
+ * or "prevodce" and "seller" in a transfer context, are treated
+ * as equivalent parties when building the form.
+ */
+const ROLE_ALIASES: Record<string, string[]> = {
+  // nabyvatel is semantically equivalent to buyer in purchase/transfer contexts
+  buyer: ["nabyvatel", "přejímatel", "obdarovaný", "assignee", "receiver", "donee", "party_b"],
+  seller: ["prevodce", "převodce", "assignor", "donor", "party_a"],
+  tenant: ["nájemce"],
+  landlord: ["pronajímatel"],
+  creditor: ["věřitel"],
+  debtor: ["dlužník", "guarantor"],
+};
+
+/** Find the canonical role for a given role slug */
+function canonicalRole(role: string): string {
+  for (const [canonical, aliases] of Object.entries(ROLE_ALIASES)) {
+    if (aliases.includes(role)) return canonical;
+  }
+  return role;
+}
 
 /**
  * Detect explicit role labels defined in the document itself.
@@ -524,17 +566,67 @@ const ROLE_MAP: { pattern: RegExp; role: string }[] = [
  */
 function detectExplicitRoles(text: string): Map<string, { label: string; pos: number }> {
   const roles = new Map<string, { label: string; pos: number }>();
-  // Match patterns like: (dále jen „Převodce"), (dále jen „Nabyvatel"), ("Převodce")
-  const regex = /\(\s*(?:dále\s+jen\s+)?[„"\u201E"]([\wáčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ\s]+)["""\u201C]\s*\)/gi;
+
+  // Pattern 1: Parenthesized — (dále jen „Převodce"), (dále jen „Nabyvatel"), ("Převodce")
+  const parenRegex = /\(\s*(?:dále\s+jen\s+)?[„"\u201E"]([\wáčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ\s]+)["""\u201C]\s*\)/gi;
   let m: RegExpExecArray | null;
-  while ((m = regex.exec(text)) !== null) {
+  while ((m = parenRegex.exec(text)) !== null) {
     const label = m[1].trim();
     const lower = label.toLowerCase();
     if (!roles.has(lower)) {
       roles.set(lower, { label, pos: m.index });
     }
   }
+
+  // Pattern 2: Standalone role label at start of section — "Nabyvatel:" or "Nabyvatel\n"
+  // Only matches known role stems to avoid false positives
+  const knownRoleStems = [
+    "nabyvatel", "převodce", "převodc", "kupujíc", "prodávajíc",
+    "objednatel", "zhotovitel", "dodavatel", "zaměstnavatel", "zaměstnanc",
+    "zmocnitel", "zmocněnc", "nájemce", "pronajímatel", "věřitel", "dlužník",
+    "postupitel", "postupník", "přejímatel", "dárce", "obdarovan", "ručitel",
+  ];
+  const stemPattern = knownRoleStems.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  const colonRegex = new RegExp(`^((?:${stemPattern})\\w*)\\s*[:]\s*$`, "gim");
+  while ((m = colonRegex.exec(text)) !== null) {
+    const label = m[1].trim();
+    const lower = label.toLowerCase();
+    // Normalize to nominative form for matching
+    const normalized = normalizeRoleLabel(lower);
+    if (!roles.has(normalized)) {
+      roles.set(normalized, { label, pos: m.index });
+    }
+  }
+
   return roles;
+}
+
+/**
+ * Normalize a Czech role label to its nominative stem.
+ * Handles common declension patterns:
+ *   nabyvatele/nabyvatelem/nabyvateli → nabyvatel
+ *   převodce/převodcem/převodci → převodce
+ */
+function normalizeRoleLabel(label: string): string {
+  const lower = label.toLowerCase().trim();
+
+  // Map of known stem→nominative. Check if label starts with any known stem.
+  const stemMap: [string, string][] = [
+    ["nabyvatel", "nabyvatel"],  // nabyvatele, nabyvatelem → nabyvatel
+    ["převodc", "převodce"],     // převodce, převodcem, převodci → převodce
+    ["kupujíc", "kupující"],
+    ["prodávajíc", "prodávající"],
+    ["zaměstnanc", "zaměstnanec"],
+    ["zmocněnc", "zmocněnec"],
+    ["postupník", "postupník"],
+    ["přejímatel", "přejímatel"],
+    ["obdarovan", "obdarovaný"],
+  ];
+
+  for (const [stem, nominative] of stemMap) {
+    if (lower.startsWith(stem)) return nominative;
+  }
+  return lower;
 }
 
 /**
@@ -557,11 +649,13 @@ function buildRoleZones(text: string, explicitRoles: Map<string, { label: string
   const zones: RoleZone[] = [];
 
   for (const [, { label, pos }] of explicitRoles) {
-    // Determine the role ID: check ROLE_MAP first, then use slug
+    // Determine the role ID: check ROLE_MAP first (using normalized label), then use slug
     const lower = label.toLowerCase();
+    const normalized = normalizeRoleLabel(lower);
     let roleId: string | null = null;
     for (const { pattern, role } of ROLE_MAP) {
-      if (new RegExp(pattern.source, "i").test(lower)) {
+      // Test both the original label and the normalized nominative form
+      if (new RegExp(pattern.source, "i").test(lower) || new RegExp(pattern.source, "i").test(normalized)) {
         roleId = role;
         break;
       }
@@ -751,10 +845,18 @@ function roleToLabel(role: string, explicitRoles?: Map<string, { label: string; 
     landlord: "Pronajímatel",
     creditor: "Věřitel",
     debtor: "Dlužník",
+    assignor: "Postupitel",
+    assignee: "Postupník",
+    receiver: "Přejímatel",
+    donor: "Dárce",
+    donee: "Obdarovaný",
+    guarantor: "Ručitel",
     representative: "Zástupce",
     administrator: "Správce vkladu",
     shareholder: "Akcionář",
     company: "Společnost",
+    party_a: "Smluvní strana A",
+    party_b: "Smluvní strana B",
   };
   return map[role] || role;
 }
@@ -789,13 +891,24 @@ function makeFieldName(prefix: string, role: string, ctx: FieldContext): string 
 function detectContractType(text: string): ContractType {
   const lower = text.toLowerCase();
 
-  // Check patterns in order of specificity
+  // Check patterns in order of specificity (most specific first)
+  // Transfer of shares / ownership — must check before generic "purchase"
+  if (/převod\w*\s+podíl|smlouv\w*\s+o\s+(?:úplatném\s+)?převod|převod\w*\s+akci|share\s+(?:purchase|transfer)/i.test(lower)) return "transfer";
+  if (/nabyvatel\w*.*převodc|převodc\w*.*nabyvatel/i.test(lower)) return "transfer";
+
   if (/kupní\s+smlouv|smlouv\w*\s+kupní|koupě|prodej/i.test(lower)) return "purchase";
   if (/nájemní\s+smlouv|smlouv\w*\s+o\s+nájmu|nájem\s|podnájem/i.test(lower)) return "lease";
   if (/smlouv\w*\s+o\s+díl[oue]|zhotov/i.test(lower)) return "work";
   if (/pracovní\s+smlouv|dohod\w*\s+o\s+proveden|dohod\w*\s+o\s+pracovní\s+činnost/i.test(lower)) return "employment";
   if (/plná\s+moc|zmocn[ěi]/i.test(lower)) return "power";
   if (/smlouv\w*\s+o\s+(?:půjč|zápůjč|úvěr)/i.test(lower)) return "loan";
+  if (/postoupen|cesní\s+smlouv|smlouv\w*\s+o\s+postoupen/i.test(lower)) return "assignment";
+  if (/darovací\s+smlouv|smlouv\w*\s+darovací|darem/i.test(lower)) return "donation";
+
+  // Fallback: infer from detected roles if no explicit contract type text
+  if (/nabyvatel/i.test(lower) && /převodc/i.test(lower)) return "transfer";
+  if (/kupujíc/i.test(lower) && /prodávajíc/i.test(lower)) return "purchase";
+  if (/postupitel/i.test(lower) && /postupník/i.test(lower)) return "assignment";
 
   return "other";
 }
@@ -803,11 +916,14 @@ function detectContractType(text: string): ContractType {
 /** Map contract type to expected role pairs to avoid duplicate role assignment */
 const CONTRACT_ROLE_PAIRS: Record<ContractType, [string, string] | null> = {
   purchase:   ["buyer", "seller"],
+  transfer:   ["nabyvatel", "prevodce"],   // převod podílu: nabyvatel ↔ převodce
   lease:      ["tenant", "landlord"],
-  work:       ["buyer", "seller"],       // objednatel=buyer, zhotovitel=seller
+  work:       ["buyer", "seller"],         // objednatel=buyer, zhotovitel=seller
   employment: ["employer", "employee"],
   power:      ["principal", "attorney"],
   loan:       ["creditor", "debtor"],
+  assignment: ["assignee", "assignor"],
+  donation:   ["donee", "donor"],
   other:      null,
 };
 
@@ -1484,27 +1600,45 @@ function detectReplacements(text: string): {
     }
   }
 
-  // ── Merge auxiliary roles into main contract parties ──
-
-  // Only "company" gets merged — representative, shareholder, administrator
-  // stay as separate groups for clearer UI categorization.
-  const MERGE_INTO_PARENT = new Set<string>(["company"]);
+  // ── Merge auxiliary roles and normalize aliases ──
 
   const expectedPair = CONTRACT_ROLE_PAIRS[contractType];
 
   // Check if "Společnost" is an explicitly defined role in the document.
-  // If so, it's a transaction object (e.g. the company being sold/transferred)
-  // and should NOT be merged into buyer/seller.
   const isCompanyExplicitRole = explicitRoles.has("společnost") || explicitRoles.has("společnosti");
 
-  // 1. Merge "company" into the appropriate main party (only if not explicitly defined)
+  // Step 1: Merge aliased roles that map to the same canonical role.
+  // e.g. if document has both "nabyvatel" and "buyer" (via alias), merge them.
+  const canonicalGroups = new Map<string, string[]>();
+  for (const role of partyMap.keys()) {
+    const canon = canonicalRole(role);
+    if (!canonicalGroups.has(canon)) canonicalGroups.set(canon, []);
+    canonicalGroups.get(canon)!.push(role);
+  }
+
+  for (const [canon, roles] of canonicalGroups) {
+    if (roles.length <= 1) continue;
+    // Merge all aliased roles into the first one (or the canonical if it exists)
+    const primary = roles.includes(canon) ? canon : roles[0];
+    const primaryParty = partyMap.get(primary)!;
+    for (const role of roles) {
+      if (role === primary) continue;
+      const other = partyMap.get(role)!;
+      primaryParty.fieldNames.push(...other.fieldNames);
+      for (const [k, v] of Object.entries(other.attributes)) {
+        if (v && !primaryParty.attributes[k]) primaryParty.attributes[k] = v;
+      }
+      partyMap.delete(role);
+    }
+  }
+
+  // Step 2: Merge "company" into the appropriate main party (only if not explicitly defined)
   if (expectedPair && partyMap.has("company") && !isCompanyExplicitRole) {
     const companyParty = partyMap.get("company")!;
     const hasRole1 = partyMap.has(expectedPair[0]);
     const hasRole2 = partyMap.has(expectedPair[1]);
 
     if (hasRole1 || hasRole2) {
-      // Merge into an existing main party
       const targetRole = !hasRole2 ? expectedPair[1] : expectedPair[0];
       if (partyMap.has(targetRole)) {
         const target = partyMap.get(targetRole)!;
@@ -1518,7 +1652,6 @@ function detectReplacements(text: string): {
         partyMap.set(targetRole, companyParty);
       }
     } else {
-      // Company is the only party — relabel it as the second role (seller/landlord/etc.)
       companyParty.role = expectedPair[1];
       companyParty.label = roleToLabel(expectedPair[1], explicitRoles);
       partyMap.set(expectedPair[1], companyParty);
@@ -1526,8 +1659,15 @@ function detectReplacements(text: string): {
     partyMap.delete("company");
   }
 
-  // Representative, shareholder, administrator are kept as separate parties
-  // for clearer UI grouping — they are NOT merged into parent parties.
+  // Step 3: For "other" contract type, try to infer a pair from detected roles.
+  // If we have exactly 2 non-auxiliary parties, treat them as the contract pair.
+  if (contractType === "other") {
+    const auxiliaryRoles = new Set(["company", "representative", "shareholder", "administrator"]);
+    const mainParties = Array.from(partyMap.values()).filter(p => !auxiliaryRoles.has(p.role));
+    if (mainParties.length === 2) {
+      notes.push(`Nalezeny 2 smluvní strany: ${mainParties.map(p => p.label).join(" a ")}`);
+    }
+  }
 
   const parties = Array.from(partyMap.values());
 
