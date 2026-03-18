@@ -5,8 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/auth/auth-provider';
 import { Button } from '@/components/ui/button';
 import {
-  LayoutDashboard, FileText, FolderOpen, Sparkles, Layers,
-  Users, Settings, Activity, Plus, ChevronLeft, ChevronRight,
+  FolderOpen, Layers, Users, Settings,
+  Plus, ChevronLeft, ChevronRight,
   FileText as LogoIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -63,20 +63,15 @@ interface NavItem {
 }
 
 const mainNav: NavItem[] = [
-  { href: '/app', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/app/templates', label: 'Šablony', icon: FileText },
+  { href: '/app', label: 'Sady', icon: Layers },
   { href: '/app/documents', label: 'Dokumenty', icon: FolderOpen },
-  { href: '/app/sets', label: 'Sady', icon: Layers },
-  { href: '/app/import', label: 'AI Import', icon: Sparkles },
+  { href: '/app/settings/entities', label: 'Subjekty', icon: Users },
 ];
 
-const teamNav: NavItem[] = [
-  { href: '/app/team', label: 'Uživatelé', icon: Users },
-];
+const teamNav: NavItem[] = [];
 
 const systemNav: NavItem[] = [
   { href: '/app/settings', label: 'Nastavení', icon: Settings },
-  { href: '/app/activity', label: 'Aktivita', icon: Activity, adminOnly: true },
 ];
 
 function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
@@ -158,9 +153,9 @@ export function AppSidebar() {
           size={collapsed ? 'icon' : 'default'}
           className={cn('w-full rounded-xl text-[13px]', collapsed && 'h-8 w-8')}
         >
-          <Link href="/app/templates">
+          <Link href="/app/sets">
             <Plus className="h-4 w-4" />
-            {!collapsed && <span className="ml-1">Nový dokument</span>}
+            {!collapsed && <span className="ml-1">Nová sada</span>}
           </Link>
         </Button>
 
@@ -244,9 +239,9 @@ export function MobileSidebar() {
 
         <div className="border-t p-3 space-y-3">
           <Button asChild className="w-full rounded-xl text-[13px]">
-            <Link href="/app/templates">
+            <Link href="/app/sets">
               <Plus className="h-4 w-4 mr-1.5" />
-              Nový dokument
+              Nová sada
             </Link>
           </Button>
 
