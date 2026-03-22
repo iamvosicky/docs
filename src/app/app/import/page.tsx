@@ -97,10 +97,10 @@ export default function UploadPage() {
 
       if (ext === 'docx') {
         const arrayBuffer = await selectedFile.arrayBuffer();
-        result = analyzeDocx(arrayBuffer);
+        result = await analyzeDocx(arrayBuffer);
       } else {
         const text = await selectedFile.text();
-        result = analyzeDocument(text);
+        result = await analyzeDocument(text);
       }
 
       setAnalysis(result);

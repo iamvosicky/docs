@@ -1744,11 +1744,11 @@ function detectReplacements(text: string): {
   return { replacements, entities, parties, shares, contractType, roleRemapping, notes, optionalSections };
 }
 
-/** Analyze plain text — replaces values with placeholders, nothing else */
-export function analyzeDocument(text: string): AnalysisResult {
+// ─── Regex-based fallback analyzers (used when API is unavailable) ──────────
+
+function analyzeDocumentRegex(text: string): AnalysisResult {
   const { replacements, entities, parties, shares, contractType, roleRemapping, notes, optionalSections } = detectReplacements(text);
 
-  // Apply replacements to a copy of the original text — only swap values, preserve everything else
   let templateText = text;
   const fields: DetectedField[] = [];
 
@@ -1756,7 +1756,6 @@ export function analyzeDocument(text: string): AnalysisResult {
     const escaped = r.original.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     templateText = templateText.replace(new RegExp(escaped, "g"), r.placeholder);
 
-    // Relabel field groups based on party merging (e.g. "Společnost" → "Prodávající")
     const field = { ...r.field };
     if (field.entity && roleRemapping.has(field.entity)) {
       const newRole = roleRemapping.get(field.entity)!;
@@ -1778,17 +1777,10 @@ export function analyzeDocument(text: string): AnalysisResult {
   return { templateText, fields, groups, entities, parties, shares, contractType, optionalSections, notes, originalText: text };
 }
 
-/**
- * Analyze a DOCX file.
- * - Detects variable values from extracted text.
- * - Replaces those values directly inside the DOCX XML (preserving all formatting).
- * - Returns the modified DOCX as base64 for later use with docxtemplater.
- */
-export function analyzeDocx(arrayBuffer: ArrayBuffer): AnalysisResult {
+function analyzeDocxRegex(arrayBuffer: ArrayBuffer): AnalysisResult {
   const text = extractTextFromDocx(arrayBuffer);
   const { replacements, entities, parties, shares, contractType, roleRemapping, notes, optionalSections } = detectReplacements(text);
 
-  // Apply replacements to plain text preview
   let templateText = text;
   const fields: DetectedField[] = [];
 
@@ -1796,7 +1788,6 @@ export function analyzeDocx(arrayBuffer: ArrayBuffer): AnalysisResult {
     const escaped = r.original.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     templateText = templateText.replace(new RegExp(escaped, "g"), r.placeholder);
 
-    // Relabel field groups based on party merging
     const field = { ...r.field };
     if (field.entity && roleRemapping.has(field.entity)) {
       const newRole = roleRemapping.get(field.entity)!;
@@ -1806,18 +1797,15 @@ export function analyzeDocx(arrayBuffer: ArrayBuffer): AnalysisResult {
     fields.push(field);
   }
 
-  // Apply replacements directly inside the DOCX XML (preserves formatting)
   let templateDocxBase64: string | undefined;
   try {
     const zip = new PizZip(arrayBuffer);
     const docFile = zip.file("word/document.xml");
     if (docFile) {
       let xml = docFile.asText();
-
       for (const r of replacements) {
         xml = replaceInDocxXml(xml, r.original, r.placeholder);
       }
-
       zip.file("word/document.xml", xml);
       templateDocxBase64 = zip.generate({ type: "base64" });
     }
@@ -1835,6 +1823,81 @@ export function analyzeDocx(arrayBuffer: ArrayBuffer): AnalysisResult {
   }
 
   return { templateText, fields, groups, entities, parties, shares, contractType, optionalSections, notes, originalText: text, templateDocxBase64 };
+}
+
+// ─── Claude API-powered analyzers (with regex fallback) ─────────────────────
+
+/**
+ * Call the /api/analyze endpoint with document text.
+ * Returns the API result or null on failure.
+ */
+async function callAnalyzeApi(text: string, filename: string): Promise<AnalysisResult | null> {
+  try {
+    const response = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, filename }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      console.warn("Analyze API returned error:", response.status, err);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.warn("Analyze API call failed, will use regex fallback:", error);
+    return null;
+  }
+}
+
+/** Analyze plain text — calls Claude API, falls back to regex on failure */
+export async function analyzeDocument(text: string): Promise<AnalysisResult> {
+  const apiResult = await callAnalyzeApi(text, "document.txt");
+  if (apiResult) return apiResult;
+
+  console.warn("Falling back to regex-based analysis for plain text");
+  return analyzeDocumentRegex(text);
+}
+
+/**
+ * Analyze a DOCX file.
+ * - Extracts plain text and sends to Claude API for field detection.
+ * - Uses the returned fields to insert {{placeholders}} into the DOCX XML (preserving formatting).
+ * - Falls back to regex-based detection if the API call fails.
+ */
+export async function analyzeDocx(arrayBuffer: ArrayBuffer): Promise<AnalysisResult> {
+  const text = extractTextFromDocx(arrayBuffer);
+  const apiResult = await callAnalyzeApi(text, "document.docx");
+
+  if (!apiResult) {
+    console.warn("Falling back to regex-based analysis for DOCX");
+    return analyzeDocxRegex(arrayBuffer);
+  }
+
+  // Apply the API-detected fields as replacements inside the DOCX XML (preserves formatting)
+  let templateDocxBase64: string | undefined;
+  try {
+    const zip = new PizZip(arrayBuffer);
+    const docFile = zip.file("word/document.xml");
+    if (docFile) {
+      let xml = docFile.asText();
+
+      for (const field of apiResult.fields) {
+        if (field.originalText) {
+          xml = replaceInDocxXml(xml, field.originalText, `{{${field.name}}}`);
+        }
+      }
+
+      zip.file("word/document.xml", xml);
+      templateDocxBase64 = zip.generate({ type: "base64" });
+    }
+  } catch (e) {
+    console.error("Failed to create template DOCX from API result:", e);
+  }
+
+  return { ...apiResult, templateDocxBase64 };
 }
 
 /**
