@@ -27,13 +27,9 @@ Every field MUST have an originalText property. originalText is the EXACT string
 ## Step 5 — Multiple signatories
 If a company has multiple signatories (e.g. předseda představenstva + člen představenstva), create a separate field for each with a UNIQUE descriptive title: "Jméno předsedy představenstva (Zájemce)" and "Jméno člena představenstva (Zájemce)".
 
-## Step 6 — Build templateText
-Replace every originalText with its {{field_name}} placeholder in the full document text. The resulting templateText must contain NO remaining literal party names, IČO numbers, addresses, or amounts.
-
 ## Output format
-Return this exact JSON structure (no markdown, no code fences, just raw JSON):
+Return ONLY this JSON structure (no templateText — it will be built server-side, no markdown, no code fences, just raw JSON):
 {
-  "templateText": "<full document with all placeholders inserted>",
   "fields": [
     {
       "name": "zajemce_company_name",
@@ -85,7 +81,6 @@ interface ClaudeParty {
 }
 
 interface ClaudeResponse {
-  templateText?: string;
   fields: ClaudeField[];
   parties?: ClaudeParty[];
   groups?: string[];
@@ -122,7 +117,7 @@ export async function POST(req: NextRequest) {
 
     const response = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 8192,
+      max_tokens: 16000,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: buildUserPrompt(truncatedText) }],
     });
