@@ -4,49 +4,44 @@ import Anthropic from "@anthropic-ai/sdk";
 const SYSTEM_PROMPT = `You are an expert Czech legal document analyzer. Extract all variable fields from the provided contract text. Return ONLY valid JSON, no other text.`;
 
 function buildUserPrompt(documentText: string): string {
-  return `Analyze this Czech legal document and extract all variable fields that should become template placeholders.
+  return `Analyze this Czech legal document and extract ALL variable fields that must become template placeholders.
 
-For each detected field return:
-- name: unique identifier using role_prefix format (e.g. seller_name, buyer_company_id, payment, contract_date). Use English role prefixes: buyer, seller, employer, employee, tenant, landlord, etc.
-- type: one of: text | date | number | currency | ico | rc | textarea | account | percentage
-- title: human-readable Czech label (e.g. "Jméno a příjmení (Prodávající)", "IČO (Kupující)")
-- description: brief Czech description
-- example: the actual value extracted from the document
-- group: logical group in Czech matching the party role (e.g. "Kupující", "Prodávající", "Zaměstnavatel", "Identifikace", "Úplata", "Termíny", "Obecné")
-- required: boolean
-- originalText: the EXACT string from the document to replace (must match character-for-character)
-- occurrences: how many times this exact value appears in the document
+CRITICAL RULES:
+1. Company names must be extracted IN FULL including their legal suffix (s.r.o., a.s., k.s. etc.) — never split them
+2. Every address (sídlem, bytem, adresa) must be its own field — never leave addresses as static text
+3. IČO placeholders must replace the actual 8-digit number — if IČO is blank (e.g. "IČO: (_)"), add a placeholder anyway
+4. When multiple people sign for one company (e.g. předseda + člen představenstva), give each person a DISTINCT title: "Jméno předsedy představenstva", "Jméno člena představenstva" — never use the same title twice
+5. Registry details (oddíl, vložka, soud) must be separate fields if they vary per contract
+6. If a value appears blank or as (_) in the document, still create the field with originalText set to "(_)"
+7. The templateText must have NO leftover literal values — every name, IČO, address, amount, date must be a {{placeholder}}
+
+For each field return:
+- name: unique SNAKE_CASE identifier describing the entity and attribute (e.g. zajemce_address, poskytovatel_ico, predseda_name)
+- type: text | date | number | currency | ico | rc | textarea | account | percentage
+- title: specific Czech label (e.g. "Adresa sídla (Zájemce)", "IČO (Poskytovatel)", "Jméno předsedy představenstva")
+- description: one-line Czech description
+- example: realistic example value
+- group: party name in Czech matching the document's "dále jen" label (e.g. "Zájemce", "Poskytovatel", "Převodce")
+- required: true for all identity fields (name, address, IČO), false for optional clauses
+- originalText: the EXACT string from the document to replace (must exist verbatim in the text)
+- occurrences: count of exact matches in the full text
 - entity: English role id if this field belongs to a contract party (buyer, seller, employer, employee, tenant, landlord, etc.), omit for contract-level fields
-- confidence: float 0-1 (0.95+ for structured data like IČO/dates, 0.75 for names, 0.8 for addresses)
+- confidence: 0.95 for IČO/RC/amounts, 0.85 for names/addresses, 0.75 for context-dependent fields
 
 Also detect contract parties and return:
 - parties: array of { role: English role id, label: Czech label, attributes: { name?, address?, companyId?, taxId?, birthNumber?, bankAccount?, email?, phone? } }
 
-Also return:
-- contractType: one of: purchase | transfer | work | lease | employment | power | loan | assignment | donation | other
-- notes: array of Czech strings with observations about the document
-
-Rules:
-- Only extract values that vary per contract instance (names, IČO, addresses, dates, amounts, bank accounts)
-- Do NOT extract static legal boilerplate text, article numbers, or section headings
-- Do NOT extract role labels themselves (e.g. "Poskytovatel", "Kupující") — only the actual values
-- For the same value appearing multiple times, create ONE field with occurrences > 1
-- IČO must be exactly 8 digits
-- Dates in Czech format (DD.MM.YYYY or written out)
-- Currency amounts: extract the numeric value. If a written-out form follows in parentheses, note it
-- Person names: only extract actual person names (e.g. "Jan Novák"), never legal terms or section headings
-- Addresses: extract the full address as one field, not individual parts
-- originalText must be the EXACT substring from the document — it will be used for find-and-replace
-
-Return JSON in this exact shape (no markdown, no code fences, just raw JSON):
+Return JSON (no markdown, no code fences, just raw JSON):
 {
+  "templateText": "full document text with all values replaced by {{placeholder_name}}",
   "fields": [{ "name": "string", "type": "string", "title": "string", "description": "string", "example": "string", "group": "string", "required": true, "originalText": "string", "occurrences": 1, "entity": "string", "confidence": 0.9 }],
   "parties": [{ "role": "string", "label": "string", "attributes": {} }],
-  "contractType": "string",
+  "groups": ["Zájemce", "Poskytovatel"],
+  "contractType": "work|purchase|transfer|lease|employment|power|loan|assignment|donation|other",
   "notes": ["string"]
 }
 
-Document text:
+Document:
 ${documentText}`;
 }
 
@@ -71,8 +66,10 @@ interface ClaudeParty {
 }
 
 interface ClaudeResponse {
+  templateText?: string;
   fields: ClaudeField[];
   parties: ClaudeParty[];
+  groups?: string[];
   contractType: string;
   notes: string[];
 }
@@ -105,7 +102,7 @@ export async function POST(req: NextRequest) {
 
     const response = await client.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 8192,
+      max_tokens: 16384,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: buildUserPrompt(truncatedText) }],
     });
@@ -156,16 +153,20 @@ export async function POST(req: NextRequest) {
       source: { page: 1, section: undefined, lineNumber: undefined },
     }));
 
-    // Build templateText by replacing originalText values with {{name}} placeholders
-    let templateText = text;
-    for (const field of fields) {
-      if (!field.originalText) continue;
-      const escaped = field.originalText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      templateText = templateText.replace(new RegExp(escaped, "g"), `{{${field.name}}}`);
+    // Use Claude's templateText if provided, otherwise build it ourselves
+    let templateText = parsed.templateText || text;
+    if (!parsed.templateText) {
+      for (const field of fields) {
+        if (!field.originalText) continue;
+        const escaped = field.originalText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        templateText = templateText.replace(new RegExp(escaped, "g"), `{{${field.name}}}`);
+      }
     }
 
-    // Build groups from fields
-    const groups = [...new Set(fields.map((f) => f.group))];
+    // Use Claude's groups if provided, otherwise derive from fields
+    const groups = parsed.groups && parsed.groups.length > 0
+      ? parsed.groups
+      : [...new Set(fields.map((f) => f.group))];
 
     // Build entity groups (legacy format)
     const entityFieldsMap = new Map<string, Set<string>>();
