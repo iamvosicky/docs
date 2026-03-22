@@ -149,6 +149,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log("Claude response:", JSON.stringify(parsed, null, 2));
+
     // Validate and normalize fields
     const validTypes = new Set([
       "text", "date", "number", "currency", "ico", "rc", "textarea", "account", "percentage",
@@ -169,14 +171,19 @@ export async function POST(req: NextRequest) {
       source: { page: 1, section: undefined, lineNumber: undefined },
     }));
 
-    // Use Claude's templateText if provided, otherwise build it ourselves
-    let templateText = parsed.templateText || text;
-    if (!parsed.templateText) {
-      for (const field of fields) {
-        if (!field.originalText) continue;
-        const escaped = field.originalText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        templateText = templateText.replace(new RegExp(escaped, "g"), `{{${field.name}}}`);
-      }
+    // Always build templateText ourselves from the original document text
+    // to ensure correct replacements. Claude's templateText can have errors
+    // (e.g. partial company name replacements).
+    // Sort fields by originalText length DESCENDING so longer strings
+    // (full company names) are replaced before shorter substrings (e.g. "a.s.")
+    let templateText = text;
+    const sortedFields = [...fields].sort(
+      (a, b) => (b.originalText?.length ?? 0) - (a.originalText?.length ?? 0),
+    );
+    for (const field of sortedFields) {
+      if (!field.originalText) continue;
+      const escaped = field.originalText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      templateText = templateText.replace(new RegExp(escaped, "g"), `{{${field.name}}}`);
     }
 
     // Use Claude's groups if provided, otherwise derive from fields

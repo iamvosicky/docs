@@ -1884,7 +1884,12 @@ export async function analyzeDocx(arrayBuffer: ArrayBuffer): Promise<AnalysisRes
     if (docFile) {
       let xml = docFile.asText();
 
-      for (const field of apiResult.fields) {
+      // Sort by originalText length descending so longer strings
+      // (full company names) are replaced before shorter substrings
+      const sorted = [...apiResult.fields].sort(
+        (a, b) => (b.originalText?.length ?? 0) - (a.originalText?.length ?? 0),
+      );
+      for (const field of sorted) {
         if (field.originalText) {
           xml = replaceInDocxXml(xml, field.originalText, `{{${field.name}}}`);
         }
