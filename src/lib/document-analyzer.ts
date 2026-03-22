@@ -321,6 +321,38 @@ function isLikelyPersonName(value: string, textBefore: string): boolean {
   // that are uncommon in surnames: -ově, -icích, -ách, -ech
   if (/(?:ově|icích|ách|ech)$/i.test(lower)) return false;
 
+  // Reject if preceded by conjunctions/prepositions that indicate contract body text, not a name
+  if (/(?:\bpokud\s*$|\bjestliže\s*$|\bkdyž\s*$|\bže\s*$|\bdle\s*$|\bpodle\s*$)/i.test(before50)) return false;
+
+  // Reject common Czech legal/contract term pairs that look like two-word names
+  const legalTermPairs = [
+    /^(?:změn|platnos|účinnos|úplnos|předmě|obsah|záni|výpověd|odstoupen|ukonče|odpovědnos|mlčenlivos|důvěrnos)/i,
+    /(?:smlouv[yěuou]|stran[yáami]|podmín[ěk]|plněn[íi]|činnost[íi]|služ[eb]|závazk[ůy]|práv[a]|povinnost[íi])$/i,
+  ];
+  if (legalTermPairs.some(p => p.test(lower))) return false;
+
+  // Reject if both words are common Czech legal/abstract nouns (not person names)
+  const legalNouns = new Set([
+    "smlouva", "smlouvy", "smlouvu", "smlouvou", "smlouvě",
+    "změna", "změny", "změnu", "změnou",
+    "platnost", "platnosti", "účinnost", "účinnosti",
+    "úplnost", "úplnosti", "předmět", "předmětu",
+    "strana", "strany", "stranám", "stranami",
+    "podmínky", "podmínek", "ustanovení",
+    "plnění", "služby", "služeb", "službu",
+    "činnost", "činnosti", "závazky", "závazků",
+    "práva", "povinnosti", "odpovědnost", "odpovědnosti",
+    "pokud", "jestliže", "avšak", "nicméně", "přičemž",
+    "poskytovatel", "poskytovatele", "poskytovatelem",
+    "zájemce", "zájemci", "zájemcem", "zájemcům",
+    "odbornou", "odborné", "odborný", "odborného",
+    "externí", "externího", "externím",
+    "autorská", "autorské", "autorských",
+    "pracovní", "pracovního", "pracovních",
+    "obchodní", "obchodního", "obchodních",
+  ]);
+  if (words.every(w => legalNouns.has(w.toLowerCase()))) return false;
+
   return true;
 }
 
@@ -582,7 +614,7 @@ function detectExplicitRoles(text: string): Map<string, { label: string; pos: nu
   // Only matches known role stems to avoid false positives
   const knownRoleStems = [
     "nabyvatel", "převodce", "převodc", "kupujíc", "prodávajíc",
-    "objednatel", "zhotovitel", "dodavatel", "zaměstnavatel", "zaměstnanc",
+    "objednatel", "zhotovitel", "dodavatel", "poskytovatel", "zaměstnavatel", "zaměstnanc",
     "zmocnitel", "zmocněnc", "nájemce", "pronajímatel", "věřitel", "dlužník",
     "postupitel", "postupník", "přejímatel", "dárce", "obdarovan", "ručitel",
   ];
@@ -621,6 +653,7 @@ function normalizeRoleLabel(label: string): string {
     ["postupník", "postupník"],
     ["přejímatel", "přejímatel"],
     ["obdarovan", "obdarovaný"],
+    ["poskytovatel", "poskytovatel"],  // poskytovatele, poskytovatelem → poskytovatel
   ];
 
   for (const [stem, nominative] of stemMap) {
@@ -1284,6 +1317,7 @@ function detectReplacements(text: string): {
         "Objednatel", "Objednatele", "Objednatelem", "Objednateli",
         "Zhotovitel", "Zhotovitele", "Zhotovitelem", "Zhotoviteli",
         "Dodavatel", "Dodavatele", "Dodavatelem", "Dodavateli",
+        "Poskytovatel", "Poskytovatele", "Poskytovatelem", "Poskytovateli",
         "Nájemce", "Nájemci", "Nájemcem",
         "Pronajímatel", "Pronajímatele", "Pronajímatelem", "Pronajímateli",
         "Zaměstnavatel", "Zaměstnavatele", "Zaměstnavatelem",
@@ -1307,6 +1341,35 @@ function detectReplacements(text: string): {
         "Vedený", "Vedeném", "Vedená", "Vedené",
         "Městského", "Městským", "Městském",
         "Obvodního", "Obvodním", "Obvodní",
+        // Contract structure / section heading words (all grammatical cases)
+        "Smlouvy", "Smlouvu", "Smlouvou", "Smlouvě",
+        "Změna", "Změny", "Změnu", "Změnou",
+        "Platnost", "Platnosti", "Platností",
+        "Účinnost", "Účinnosti", "Účinností",
+        "Úplnost", "Úplnosti", "Úplností",
+        "Strany", "Stranám", "Stranami", "Stranách",
+        "Podmínky", "Podmínek", "Podmínkami",
+        "Ustanovení", "Odstoupení", "Ukončení",
+        "Odpovědnost", "Odpovědnosti",
+        "Mlčenlivost", "Mlčenlivosti",
+        "Důvěrnost", "Důvěrnosti",
+        "Záruky", "Záruk", "Zárukami",
+        "Práva", "Povinnosti",
+        // Common Czech conjunctions/adverbs/prepositions that start sentences (capitalized)
+        "Pokud", "Jestliže", "Pokude", "Avšak", "Nicméně", "Přičemž",
+        "Případně", "Zejména", "Rovněž", "Současně", "Každá", "Každý",
+        "Žádná", "Žádný", "Jakákoliv", "Jakýkoliv", "Veškeré", "Veškerá",
+        "Obě", "Smluvních", "Závazkové", "Právní",
+        // Words commonly appearing before/after role keywords (false name combos)
+        "Zájemci", "Zájemce", "Zájemcem", "Zájemcům",
+        "Odbornou", "Odborné", "Odborný", "Odborného",
+        "Externího", "Externí", "Externím",
+        "Plnění", "Služby", "Služeb", "Službu",
+        "Činnosti", "Činnost", "Činností",
+        "Výpověď", "Výpovědi", "Výpovědí",
+        "Obchodních", "Obchodní", "Obchodního",
+        "Pracovní", "Pracovního", "Pracovních",
+        "Autorská", "Autorské", "Autorských", "Autorského",
       ];
       // Check if any word in the match is a skip word
       const words = value.split(/\s+/);
