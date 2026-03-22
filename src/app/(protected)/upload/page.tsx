@@ -27,6 +27,26 @@ import { mapEntityToFields } from '@/types/saved-entity';
 
 type Step = 'upload' | 'review' | 'done';
 
+/** Role description for group headers */
+function groupRoleDescription(group: string): string | null {
+  const map: Record<string, string> = {
+    'Kupující': 'Strana kupující předmět smlouvy',
+    'Prodávající': 'Strana prodávající předmět smlouvy',
+    'Zájemce': 'Strana poptávající službu',
+    'Poskytovatel': 'Strana poskytující službu',
+    'Zhotovitel': 'Strana poskytující službu',
+    'Převodce': 'Strana převádějící podíl',
+    'Nabyvatel': 'Strana nabývající podíl',
+    'Zaměstnavatel': 'Strana zaměstnávající',
+    'Zaměstnanec': 'Strana v pracovním poměru',
+    'Nájemce': 'Strana užívající předmět nájmu',
+    'Pronajímatel': 'Strana pronajímající předmět nájmu',
+    'Objednatel': 'Strana objednávající dílo',
+    'Dodavatel': 'Strana dodávající zboží nebo služby',
+  };
+  return map[group] || null;
+}
+
 /** Confidence level thresholds */
 function confidenceLevel(c: number): 'high' | 'medium' | 'low' {
   if (c >= 0.85) return 'high';
@@ -686,7 +706,12 @@ export default function UploadPage() {
                         onClick={() => toggleGroup(group)}
                         className="w-full px-5 py-3 border-b bg-muted/30 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
                       >
-                        <span className="text-sm font-medium">{group}</span>
+                        <div className="text-left">
+                          <span className="text-sm font-medium">{group}</span>
+                          {groupRoleDescription(group) && (
+                            <span className="block text-[11px] text-muted-foreground font-normal">{groupRoleDescription(group)}</span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2">
                           {groupLowConf > 0 && (
                             <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded text-[10px] font-medium">
