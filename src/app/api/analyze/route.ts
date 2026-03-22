@@ -1,47 +1,63 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
-const SYSTEM_PROMPT = `You are an expert Czech legal document analyzer. Extract all variable fields from the provided contract text. Return ONLY valid JSON, no other text.`;
+const SYSTEM_PROMPT = `You are an expert Czech legal document template analyzer. Your job is to identify every value in the document that would change when this contract is reused for a different client or transaction. You output only valid JSON.`;
 
 function buildUserPrompt(documentText: string): string {
-  return `Analyze this Czech legal document and extract ALL variable fields that must become template placeholders.
+  return `Analyze the following Czech legal document. Identify every field that must become a template placeholder — meaning any value that would differ when this contract is signed with a different party or in a different situation.
 
-CRITICAL RULES:
-1. Company names must be extracted IN FULL including their legal suffix (s.r.o., a.s., k.s. etc.) — never split them
-2. Every address (sídlem, bytem, adresa) must be its own field — never leave addresses as static text
-3. IČO placeholders must replace the actual 8-digit number — if IČO is blank (e.g. "IČO: (_)"), add a placeholder anyway
-4. When multiple people sign for one company (e.g. předseda + člen představenstva), give each person a DISTINCT title: "Jméno předsedy představenstva", "Jméno člena představenstva" — never use the same title twice
-5. Registry details (oddíl, vložka, soud) must be separate fields if they vary per contract
-6. If a value appears blank or as (_) in the document, still create the field with originalText set to "(_)"
-7. The templateText must have NO leftover literal values — every name, IČO, address, amount, date must be a {{placeholder}}
+## Step 1 — Identify all parties
+Find every party defined via "(dále jen „X")" patterns. For each party, list ALL their attributes you find in the document: full legal name (including a.s., s.r.o. etc.), IČO, address, registry details (soud, oddíl, vložka), signatories.
 
-For each field return:
-- name: unique SNAKE_CASE identifier describing the entity and attribute (e.g. zajemce_address, poskytovatel_ico, predseda_name)
-- type: text | date | number | currency | ico | rc | textarea | account | percentage
-- title: specific Czech label (e.g. "Adresa sídla (Zájemce)", "IČO (Poskytovatel)", "Jméno předsedy představenstva")
-- description: one-line Czech description
-- example: realistic example value
-- group: party name in Czech matching the document's "dále jen" label (e.g. "Zájemce", "Poskytovatel", "Převodce")
-- required: true for all identity fields (name, address, IČO), false for optional clauses
-- originalText: the EXACT string from the document to replace (must exist verbatim in the text)
-- occurrences: count of exact matches in the full text
-- entity: English role id if this field belongs to a contract party (buyer, seller, employer, employee, tenant, landlord, etc.), omit for contract-level fields
-- confidence: 0.95 for IČO/RC/amounts, 0.85 for names/addresses, 0.75 for context-dependent fields
+## Step 2 — Identify all variable values
+For EACH attribute of EACH party, create one field. Also identify:
+- All monetary amounts (hourly rates, caps, penalties)
+- All dates or date placeholders
+- All blank fields written as (_) — these MUST become placeholders too
 
-Also detect contract parties and return:
-- parties: array of { role: English role id, label: Czech label, attributes: { name?, address?, companyId?, taxId?, birthNumber?, bankAccount?, email?, phone? } }
+## Step 3 — Handle blank/empty fields
+If a field in the document is written as "(_)" or "( )" or left as a blank line, the originalText must be exactly "(_)" or the blank pattern as it appears. Do NOT skip these.
 
-Return JSON (no markdown, no code fences, just raw JSON):
+## Step 4 — Company names
+Always capture the FULL company name including legal suffix as one originalText. Example: "ATLANTIK finanční trhy, a.s." is one field, never split it.
+
+## Step 5 — Multiple signatories
+If a company has multiple signatories (e.g. předseda představenstva + člen představenstva), create a separate field for each with a UNIQUE descriptive title: "Jméno předsedy představenstva (Zájemce)" and "Jméno člena představenstva (Zájemce)".
+
+## Step 6 — Build templateText
+Replace every originalText with its {{field_name}} placeholder in the full document text. The resulting templateText must contain NO remaining literal party names, IČO numbers, addresses, or amounts.
+
+## Output format
+Return this exact JSON structure (no markdown, no code fences, just raw JSON):
 {
-  "templateText": "full document text with all values replaced by {{placeholder_name}}",
-  "fields": [{ "name": "string", "type": "string", "title": "string", "description": "string", "example": "string", "group": "string", "required": true, "originalText": "string", "occurrences": 1, "entity": "string", "confidence": 0.9 }],
-  "parties": [{ "role": "string", "label": "string", "attributes": {} }],
-  "groups": ["Zájemce", "Poskytovatel"],
-  "contractType": "work|purchase|transfer|lease|employment|power|loan|assignment|donation|other",
-  "notes": ["string"]
+  "templateText": "<full document with all placeholders inserted>",
+  "fields": [
+    {
+      "name": "zajemce_company_name",
+      "type": "text",
+      "title": "Název společnosti (Zájemce)",
+      "description": "Plný název včetně právní formy",
+      "example": "Novák s.r.o.",
+      "group": "Zájemce",
+      "required": true,
+      "originalText": "ATLANTIK finanční trhy, a.s.",
+      "occurrences": 2,
+      "confidence": 0.95
+    }
+  ],
+  "groups": ["Zájemce", "Poskytovatel", "Úplata"],
+  "contractType": "work",
+  "notes": []
 }
 
-Document:
+Field naming convention:
+- Use format: {party_slug}_{attribute} — e.g. zajemce_ico, poskytovatel_address, zajemce_predseda_name
+- For blank (_) fields: use descriptive name based on the label before it — e.g. "poskytovatel_ico", "poskytovatel_address"
+- Never reuse the same name twice
+
+Types: text | date | number | currency | ico | rc | textarea | account | percentage
+
+## Document to analyze:
 ${documentText}`;
 }
 
@@ -68,7 +84,7 @@ interface ClaudeParty {
 interface ClaudeResponse {
   templateText?: string;
   fields: ClaudeField[];
-  parties: ClaudeParty[];
+  parties?: ClaudeParty[];
   groups?: string[];
   contractType: string;
   notes: string[];
