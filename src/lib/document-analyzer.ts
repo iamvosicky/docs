@@ -1832,6 +1832,7 @@ function analyzeDocxRegex(arrayBuffer: ArrayBuffer): AnalysisResult {
  * Returns the API result or null on failure.
  */
 async function callAnalyzeApi(text: string, filename: string): Promise<AnalysisResult | null> {
+  console.log("CALLING API with text length:", text.length);
   try {
     const response = await fetch("/api/analyze", {
       method: "POST",

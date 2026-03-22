@@ -10,7 +10,7 @@ import {
   Upload, FileText, Loader2, ArrowRight, ArrowLeft, Check,
   Sparkles, AlertCircle, Eye, EyeOff, Trash2, Edit3,
   ClipboardList, Search, Download, ChevronDown, ChevronRight,
-  X, CheckCircle2, FileUp, FolderOpen, AlertTriangle, Link2, Users
+  X, CheckCircle2, FileUp, FolderOpen, AlertTriangle, Link2, Users, Info
 } from 'lucide-react';
 import {
   analyzeDocx, analyzeDocument,
@@ -61,6 +61,7 @@ export default function UploadPage() {
   const [templateDescription, setTemplateDescription] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [dragOver, setDragOver] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
   const [savedTemplateId, setSavedTemplateId] = useState<string | null>(null);
   const [selectedSetId, setSelectedSetId] = useState<string | null>(null);
   const [shareSelection, setShareSelection] = useState<ShareSelection>({
@@ -514,13 +515,40 @@ export default function UploadPage() {
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <Search className="h-5 w-5 text-primary" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Kontrola šablony</h1>
                 <p className="text-sm text-muted-foreground">
                   {file?.name} &mdash; {activeFields.length} polí v {activeGroups.length} skupinách
-                  {analysis.shares.length > 0 && ` | ${analysis.shares.length} podilu`}
+                  {analysis.shares.length > 0 && ` | ${analysis.shares.length} podílů`}
+                  {' • Claude AI'}
                 </p>
               </div>
+              {analysis.notes.length > 0 && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowNotes(!showNotes)}
+                    className="h-8 w-8 rounded-lg border bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors"
+                    title="Poznámky k analýze"
+                  >
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                  {showNotes && (
+                    <div className="absolute right-0 top-10 z-50 w-80 rounded-xl border bg-popover p-4 shadow-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Poznámky</span>
+                        <button onClick={() => setShowNotes(false)} className="text-muted-foreground hover:text-foreground">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <div className="space-y-1.5">
+                        {analysis.notes.map((note, i) => (
+                          <p key={i} className="text-xs text-muted-foreground">{note}</p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -589,19 +617,7 @@ export default function UploadPage() {
             </div>
           )}
 
-          {/* Notes & warnings */}
-          {analysis.notes.length > 0 && (
-            <div className="rounded-2xl border bg-muted/20 p-4">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <div className="space-y-1">
-                  {analysis.notes.map((note, i) => (
-                    <p key={i} className="text-sm text-muted-foreground">{note}</p>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Notes moved to header info icon popover */}
 
           {/* Share selector */}
           {analysis.shares.length > 0 && (

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
-const SYSTEM_PROMPT = `You are an expert Czech legal document template analyzer. Your job is to identify every value in the document that would change when this contract is reused for a different client or transaction. You output only valid JSON.`;
+const SYSTEM_PROMPT = `You are an expert Czech legal document template analyzer. Your job is to identify every value in the document that would change when this contract is reused for a different client or transaction. You MUST always respond with valid JSON only. Never refuse, never explain, never add prose before or after the JSON. If the document seems incomplete, still analyze whatever text is provided and return JSON.`;
 
 function buildUserPrompt(documentText: string): string {
   return `Analyze the following Czech legal document. Identify every field that must become a template placeholder — meaning any value that would differ when this contract is signed with a different party or in a different situation.
@@ -94,6 +94,7 @@ interface ClaudeResponse {
 }
 
 export async function POST(req: NextRequest) {
+  console.log("API ROUTE HIT");
   try {
     const { text, filename } = await req.json();
 
@@ -115,13 +116,13 @@ export async function POST(req: NextRequest) {
     const client = new Anthropic({ apiKey });
 
     // Truncate very long documents to stay within context limits
-    const maxChars = 80_000;
+    const maxChars = 20_000;
     const truncatedText =
       text.length > maxChars ? text.slice(0, maxChars) + "\n\n[...dokument zkrácen...]" : text;
 
     const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 16384,
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 8192,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: buildUserPrompt(truncatedText) }],
     });
@@ -135,17 +136,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Parse JSON — strip any markdown fences if Claude adds them
     let jsonText = contentBlock.text.trim();
-    if (jsonText.startsWith("```")) {
-      jsonText = jsonText.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+
+    // Remove markdown fences
+    jsonText = jsonText.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
+
+    // Extract JSON object
+    const firstBrace = jsonText.indexOf("{");
+    const lastBrace = jsonText.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      jsonText = jsonText.slice(firstBrace, lastBrace + 1);
     }
+
+    console.log("JSON to parse (first 200):", jsonText.slice(0, 200));
+    console.log("JSON char codes 0-5:", [...jsonText.slice(0, 5)].map(c => c.charCodeAt(0)));
 
     let parsed: ClaudeResponse;
     try {
       parsed = JSON.parse(jsonText);
     } catch {
-      console.error("Failed to parse Claude response as JSON:", jsonText.slice(0, 500));
+      console.error("Failed to parse Claude response as JSON.");
+      console.error("Full raw Claude response:", contentBlock.text);
       return NextResponse.json(
         { error: "Invalid JSON from Claude", raw: jsonText.slice(0, 1000) },
         { status: 500 },
@@ -153,6 +164,11 @@ export async function POST(req: NextRequest) {
     }
 
     console.log("Claude response:", JSON.stringify(parsed, null, 2));
+
+console.log("RAW fields from Claude:");
+(parsed.fields || []).forEach(f => {
+  console.log(`  ${f.name}: originalText=${JSON.stringify(f.originalText)}, example=${JSON.stringify(f.example)}`);
+});
 
     // Validate and normalize fields
     const validTypes = new Set([
