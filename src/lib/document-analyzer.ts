@@ -254,6 +254,74 @@ const COMPANY_SUFFIX = /(?:s\.r\.o\.|a\.s\.|k\.s\.|v\.o\.s\.|z\.s\.|spol\.\s*s\s
 const PERSON_NAME_PATTERN = /(?:(?:pan[íu]?|panem|jméno|zastoupen[áý]?m?)[^\S\n]+)?([A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+[^\S\n]+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+(?:[^\S\n]+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][a-záčďéěíňóřšťúůýž]+)?)/g;
 
 /**
+ * Stem-based filter: returns true if a single word is NOT a person name.
+ *
+ * Uses prefix stems to catch all grammatical cases without listing every form.
+ * E.g. stem "smlouv" matches "Smlouva", "Smlouvy", "Smlouvou", "Smlouvě", etc.
+ *
+ * Categories:
+ * 1. Legal role stems (from ROLE_MAP + common Czech legal roles)
+ * 2. Contract structure / section heading stems
+ * 3. Czech conjunctions, adverbs, prepositions (when capitalized at sentence start)
+ * 4. Document action / registry words
+ * 5. Financial / payment terms
+ * 6. Common abstract legal nouns
+ */
+const NON_NAME_STEMS = [
+  // Legal party roles (all declension forms covered by stem)
+  "nabyvatel", "převodc", "kupujíc", "prodávajíc",
+  "objednatel", "zhotovitel", "dodavatel", "poskytovatel",
+  "nájemce", "nájemci", "nájemcem", "pronajímatel",
+  "zaměstnavatel", "zaměstnanc", "zaměstnanec",
+  "zmocnitel", "zmocněnc", "zmocněnec",
+  "věřitel", "dlužník", "postupitel", "postupník",
+  "přejímatel", "dárce", "obdarovan", "ručitel",
+  "zájemce", "zájemci", "zájemcem", "zájemců",
+  // Contract structure / section headings
+  "smlouv", "článe", "smluvní", "předmět", "příloha", "přílohy",
+  "změna", "změn", "platnos", "účinnos", "úplnos",
+  "strana", "strany", "stranám", "stranami",
+  "podmínk", "ustanovení", "odstoupen", "ukončen",
+  "odpovědnos", "mlčenlivos", "důvěrnos",
+  "záruk", "práva", "povinnost",
+  "odborn", "extern", "autorstv", "autorsk",
+  "plnění", "služ", "činnos", "výpověd",
+  "obchodní", "pracovní", "právní", "závazkové",
+  // Conjunctions / adverbs / prepositions (capitalized at start of sentence)
+  "pokud", "jestliže", "avšak", "nicméně", "přičemž",
+  "případně", "zejména", "rovněž", "současně", "protože",
+  "každ", "žádn", "jakákoliv", "jakýkoliv", "vešker",
+  "obě", "dále", "tato", "tato", "tento", "následujíc",
+  "obecné", "zvláštní", "závěrečn",
+  // Document / registry / action words
+  "sepsáno", "podepsáno", "ověřeno", "schváleno", "vyhotoveno",
+  "uzavřeno", "dohodnuto", "potvrzeno", "zpracováno",
+  "zapsán", "zapsaná", "zapsané", "zapsaný",
+  "rejstřík", "veden", "městsk", "okresní", "krajsk", "nejvyšší", "ústavní",
+  "obvodní", "obvodního",
+  // Financial / payment
+  "úplat", "platb", "celkov", "celkem", "částk",
+  "sjednan", "dohodnut", "stanoven",
+  "záloha", "splátk", "faktur", "splatnos",
+  "odměn", "odmén",
+  // Common Czech non-name abstract nouns
+  "česká", "český", "české", "českého",
+  "společnost", "společnosti",
+  "zákoník", "zákon", "zákoníku",
+  "občanského", "obchodního",
+];
+
+/** Pre-compiled regex for non-name word matching (case-insensitive, stem prefix match) */
+const NON_NAME_REGEX = new RegExp(
+  `^(?:${NON_NAME_STEMS.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`,
+  "i"
+);
+
+function isNonNameWord(word: string): boolean {
+  return NON_NAME_REGEX.test(word.toLowerCase());
+}
+
+/**
  * Validate that a value looks like a real person name, not a location/address.
  *
  * Rejects:
@@ -320,38 +388,6 @@ function isLikelyPersonName(value: string, textBefore: string): boolean {
   // Reject values where a word ends in typical Czech location case suffixes
   // that are uncommon in surnames: -ově, -icích, -ách, -ech
   if (/(?:ově|icích|ách|ech)$/i.test(lower)) return false;
-
-  // Reject if preceded by conjunctions/prepositions that indicate contract body text, not a name
-  if (/(?:\bpokud\s*$|\bjestliže\s*$|\bkdyž\s*$|\bže\s*$|\bdle\s*$|\bpodle\s*$)/i.test(before50)) return false;
-
-  // Reject common Czech legal/contract term pairs that look like two-word names
-  const legalTermPairs = [
-    /^(?:změn|platnos|účinnos|úplnos|předmě|obsah|záni|výpověd|odstoupen|ukonče|odpovědnos|mlčenlivos|důvěrnos)/i,
-    /(?:smlouv[yěuou]|stran[yáami]|podmín[ěk]|plněn[íi]|činnost[íi]|služ[eb]|závazk[ůy]|práv[a]|povinnost[íi])$/i,
-  ];
-  if (legalTermPairs.some(p => p.test(lower))) return false;
-
-  // Reject if both words are common Czech legal/abstract nouns (not person names)
-  const legalNouns = new Set([
-    "smlouva", "smlouvy", "smlouvu", "smlouvou", "smlouvě",
-    "změna", "změny", "změnu", "změnou",
-    "platnost", "platnosti", "účinnost", "účinnosti",
-    "úplnost", "úplnosti", "předmět", "předmětu",
-    "strana", "strany", "stranám", "stranami",
-    "podmínky", "podmínek", "ustanovení",
-    "plnění", "služby", "služeb", "službu",
-    "činnost", "činnosti", "závazky", "závazků",
-    "práva", "povinnosti", "odpovědnost", "odpovědnosti",
-    "pokud", "jestliže", "avšak", "nicméně", "přičemž",
-    "poskytovatel", "poskytovatele", "poskytovatelem",
-    "zájemce", "zájemci", "zájemcem", "zájemcům",
-    "odbornou", "odborné", "odborný", "odborného",
-    "externí", "externího", "externím",
-    "autorská", "autorské", "autorských",
-    "pracovní", "pracovního", "pracovních",
-    "obchodní", "obchodního", "obchodních",
-  ]);
-  if (words.every(w => legalNouns.has(w.toLowerCase()))) return false;
 
   return true;
 }
@@ -1302,78 +1338,11 @@ function detectReplacements(text: string): {
       // Skip names found in verification/notary sections
       if (isInVerificationSection(text, match.index)) continue;
 
-      // Skip common Czech legal/document terms that look like names (capitalized words)
-      const skipWords = [
-        "Česká republika", "Český", "České", "Obchodní", "Občanského",
-        "Zákoníku", "Zákoník", "Zákon", "Smlouva", "Článek", "Smluvní",
-        "Předmět", "Tato", "Tento", "Následující", "Obecné", "Zvláštní",
-        "Závěrečná", "Příloha", "Strana", "Trvale", "Dále", "Společnost",
-        "Městský", "Okresní", "Krajský", "Nejvyšší", "Ústavní",
-        // Legal party role words (all grammatical cases)
-        "Nabyvatel", "Nabyvatele", "Nabyvatelem", "Nabyvateli",
-        "Převodce", "Převodci", "Převodcem",
-        "Kupující", "Kupujícího", "Kupujícímu", "Kupujícím",
-        "Prodávající", "Prodávajícího", "Prodávajícímu", "Prodávajícím",
-        "Objednatel", "Objednatele", "Objednatelem", "Objednateli",
-        "Zhotovitel", "Zhotovitele", "Zhotovitelem", "Zhotoviteli",
-        "Dodavatel", "Dodavatele", "Dodavatelem", "Dodavateli",
-        "Poskytovatel", "Poskytovatele", "Poskytovatelem", "Poskytovateli",
-        "Nájemce", "Nájemci", "Nájemcem",
-        "Pronajímatel", "Pronajímatele", "Pronajímatelem", "Pronajímateli",
-        "Zaměstnavatel", "Zaměstnavatele", "Zaměstnavatelem",
-        "Zaměstnanec", "Zaměstnance", "Zaměstnancem",
-        "Zmocnitel", "Zmocnitele", "Zmocnitelem",
-        "Zmocněnec", "Zmocněnce", "Zmocněncem",
-        "Věřitel", "Věřitele", "Věřitelem",
-        "Dlužník", "Dlužníka", "Dlužníkem",
-        // Common document/financial words
-        "Úplata", "Úplaty", "Úplatě", "Úplatu",
-        "Platba", "Platby", "Platbě", "Platbu",
-        "Celková", "Celkem", "Částka",
-        "Sjednaná", "Dohodnutá", "Stanovená",
-        "Záloha", "Splátka", "Faktura",
-        // Document action words that appear as capitalized first words
-        "Sepsáno", "Podepsáno", "Ověřeno", "Schváleno", "Vyhotoveno",
-        "Uzavřeno", "Dohodnuto", "Potvrzeno", "Zpracováno",
-        // Common location / registry words
-        "Zapsáno", "Zapsán", "Zapsaná", "Zapsaný", "Zapsané",
-        "Rejstříku", "Rejstříkem", "Rejstřík",
-        "Vedený", "Vedeném", "Vedená", "Vedené",
-        "Městského", "Městským", "Městském",
-        "Obvodního", "Obvodním", "Obvodní",
-        // Contract structure / section heading words (all grammatical cases)
-        "Smlouvy", "Smlouvu", "Smlouvou", "Smlouvě",
-        "Změna", "Změny", "Změnu", "Změnou",
-        "Platnost", "Platnosti", "Platností",
-        "Účinnost", "Účinnosti", "Účinností",
-        "Úplnost", "Úplnosti", "Úplností",
-        "Strany", "Stranám", "Stranami", "Stranách",
-        "Podmínky", "Podmínek", "Podmínkami",
-        "Ustanovení", "Odstoupení", "Ukončení",
-        "Odpovědnost", "Odpovědnosti",
-        "Mlčenlivost", "Mlčenlivosti",
-        "Důvěrnost", "Důvěrnosti",
-        "Záruky", "Záruk", "Zárukami",
-        "Práva", "Povinnosti",
-        // Common Czech conjunctions/adverbs/prepositions that start sentences (capitalized)
-        "Pokud", "Jestliže", "Pokude", "Avšak", "Nicméně", "Přičemž",
-        "Případně", "Zejména", "Rovněž", "Současně", "Každá", "Každý",
-        "Žádná", "Žádný", "Jakákoliv", "Jakýkoliv", "Veškeré", "Veškerá",
-        "Obě", "Smluvních", "Závazkové", "Právní",
-        // Words commonly appearing before/after role keywords (false name combos)
-        "Zájemci", "Zájemce", "Zájemcem", "Zájemcům",
-        "Odbornou", "Odborné", "Odborný", "Odborného",
-        "Externího", "Externí", "Externím",
-        "Plnění", "Služby", "Služeb", "Službu",
-        "Činnosti", "Činnost", "Činností",
-        "Výpověď", "Výpovědi", "Výpovědí",
-        "Obchodních", "Obchodní", "Obchodního",
-        "Pracovní", "Pracovního", "Pracovních",
-        "Autorská", "Autorské", "Autorských", "Autorského",
-      ];
-      // Check if any word in the match is a skip word
+      // ── REJECT NON-NAME WORDS ──
+      // Instead of an exhaustive blacklist, use stem-based matching:
+      // Any word whose stem matches a known Czech legal/role/abstract term is not a person name.
       const words = value.split(/\s+/);
-      if (skipWords.some((w) => words.some(word => word === w || value.includes(w)))) continue;
+      if (words.some(w => isNonNameWord(w))) continue;
 
       // Reject if the same word appears twice (e.g. "Úplata Úplata")
       const uniqueWords = new Set(words.map(w => w.toLowerCase()));
