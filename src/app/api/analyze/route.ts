@@ -16,10 +16,13 @@ For EACH attribute of EACH party, create one field. Also identify:
 - All blank fields written as (_) — these MUST become placeholders too
 
 ## Step 3 — Handle blank/empty fields
-If a field in the document is written as "(_)" or "( )" or left as a blank line, the originalText must be exactly "(_)" or the blank pattern as it appears. Do NOT skip these.
+If a field in the document is written as "(_)" or "( )" or left as a blank line, the originalText must be exactly "(_)" or the blank pattern as it appears. Do NOT skip these. Blank fields MUST be replaced with {{placeholders}} in templateText.
 
 ## Step 4 — Company names
-Always capture the FULL company name including legal suffix as one originalText. Example: "ATLANTIK finanční trhy, a.s." is one field, never split it.
+Company names MUST include their full legal suffix (a.s., s.r.o., k.s., v.o.s., spol. s r.o., etc.) as ONE single originalText value. Never split a company name from its suffix. Example: originalText must be "ATLANTIK finanční trhy, a.s." — never just "a.s." or just "ATLANTIK finanční trhy,".
+
+## CRITICAL — originalText is MANDATORY
+Every field MUST have an originalText property. originalText is the EXACT string as it appears verbatim in the document text. Without it, the template cannot be built. If you cannot find the exact text, use the closest match from the document. For blank fields, use "(_)" as originalText.
 
 ## Step 5 — Multiple signatories
 If a company has multiple signatories (e.g. předseda představenstva + člen představenstva), create a separate field for each with a UNIQUE descriptive title: "Jméno předsedy představenstva (Zájemce)" and "Jméno člena představenstva (Zájemce)".
@@ -156,20 +159,28 @@ export async function POST(req: NextRequest) {
       "text", "date", "number", "currency", "ico", "rc", "textarea", "account", "percentage",
     ]);
 
-    const fields = (parsed.fields || []).map((f) => ({
-      name: f.name || "unknown",
-      type: validTypes.has(f.type) ? f.type : "text",
-      title: f.title || f.name,
-      description: f.description || "",
-      example: f.example || f.originalText || "",
-      group: f.group || "Obecné",
-      required: f.required !== false,
-      originalText: f.originalText || "",
-      occurrences: f.occurrences || 1,
-      entity: f.entity || undefined,
-      confidence: typeof f.confidence === "number" ? f.confidence : 0.85,
-      source: { page: 1, section: undefined, lineNumber: undefined },
-    }));
+    const fields = (parsed.fields || []).map((f) => {
+      // Fallback: if originalText is missing, try to find example value in the document
+      let originalText = f.originalText || "";
+      if (!originalText && f.example && text.includes(f.example)) {
+        originalText = f.example;
+      }
+
+      return {
+        name: f.name || "unknown",
+        type: validTypes.has(f.type) ? f.type : "text",
+        title: f.title || f.name,
+        description: f.description || "",
+        example: f.example || originalText || "",
+        group: f.group || "Obecné",
+        required: f.required !== false,
+        originalText,
+        occurrences: f.occurrences || 1,
+        entity: f.entity || undefined,
+        confidence: typeof f.confidence === "number" ? f.confidence : 0.85,
+        source: { page: 1, section: undefined, lineNumber: undefined },
+      };
+    });
 
     // Always build templateText ourselves from the original document text
     // to ensure correct replacements. Claude's templateText can have errors
