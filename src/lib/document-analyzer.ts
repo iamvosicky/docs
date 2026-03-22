@@ -482,6 +482,15 @@ export function extractTextFromDocx(arrayBuffer: ArrayBuffer): string {
     }
   }
 
+  // Decode HTML entities from DOCX XML
+  text = text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code)));
+
   return text.trim();
 }
 
