@@ -1,73 +1,30 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { SignIn } from '@/components/auth/sign-in';
+import { useSearchParams } from 'next/navigation';
+import { FileText } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    // Set a simple cookie directly
-    document.cookie = "auth-token=test-token; path=/; max-age=86400";
-    
-    // Show success message
-    alert('Login successful! Cookie set.');
-    
-    // Redirect to home
-    router.push('/');
-    router.refresh();
-  };
+  const searchParams = useSearchParams();
+  const returnUrl = searchParams?.get('returnUrl') || '/';
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <h1 className="text-2xl font-bold mb-4">Login Page</h1>
-      <p className="mb-4">Please log in to access the application.</p>
-      
-      <form onSubmit={handleLogin} className="max-w-md">
-        <div className="mb-4">
-          <label className="block mb-2">Email</label>
-          <input 
-            type="email" 
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 border rounded"
-            placeholder="test@example.com"
-            required
-          />
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-12 bg-gradient-to-b from-background to-muted/30">
+      <div className="w-full max-w-md">
+        {/* Brand header */}
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-flex items-center gap-2.5 mb-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-sm">
+              <FileText className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <span className="font-bold text-xl">Contract Generator</span>
+          </Link>
+          <h1 className="text-2xl font-bold mt-4">Vítejte zpět</h1>
+          <p className="text-muted-foreground mt-1">Přihlaste se pro přístup k dokumentům</p>
         </div>
-        
-        <button 
-          type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
-      
-      <div className="mt-8">
-        <h2 className="text-xl font-bold mb-2">Debug Info</h2>
-        <button 
-          onClick={() => alert(document.cookie)}
-          className="bg-gray-200 px-4 py-2 rounded mr-2"
-        >
-          Show Cookies
-        </button>
-        
-        <button 
-          onClick={() => {
-            document.cookie = "auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-            alert('Cookie cleared!');
-          }}
-          className="bg-red-500 text-white px-4 py-2 rounded"
-        >
-          Clear Auth Cookie
-        </button>
+
+        <SignIn returnUrl={returnUrl} />
       </div>
     </div>
   );

@@ -20,17 +20,21 @@ const getTemplateData = (id: string) => {
         schema: {
           type: "object",
           properties: {
-            KUP_JMENO: { type: "string", title: "Jméno kupujícího" },
+            KUP_JMENO: { type: "string", title: "Název / jméno kupujícího" },
             KUP_ADRESA: { type: "string", title: "Adresa kupujícího" },
             KUP_ICO: { type: "string", title: "IČO kupujícího" },
-            PROD_JMENO: { type: "string", title: "Jméno prodávajícího" },
+            KUP_PODPISUJICI_JMENO: { type: "string", title: "Podepisující za kupujícího" },
+            KUP_PODPISUJICI_FUNKCE: { type: "string", title: "Funkce podepisujícího (kupující)" },
+            PROD_JMENO: { type: "string", title: "Název / jméno prodávajícího" },
             PROD_ADRESA: { type: "string", title: "Adresa prodávajícího" },
             PROD_ICO: { type: "string", title: "IČO prodávajícího" },
+            PROD_PODPISUJICI_JMENO: { type: "string", title: "Podepisující za prodávajícího" },
+            PROD_PODPISUJICI_FUNKCE: { type: "string", title: "Funkce podepisujícího (prodávající)" },
             PREDMET_DILA: { type: "string", title: "Předmět díla" },
             CENA: { type: "string", title: "Cena díla" },
             DATUM_PREDANI: { type: "string", title: "Datum předání" }
           },
-          required: ["KUP_JMENO", "KUP_ADRESA", "KUP_ICO", "PROD_JMENO", "PROD_ADRESA", "PROD_ICO", "PREDMET_DILA", "CENA", "DATUM_PREDANI"]
+          required: ["KUP_JMENO", "KUP_ADRESA", "KUP_ICO", "KUP_PODPISUJICI_JMENO", "KUP_PODPISUJICI_FUNKCE", "PROD_JMENO", "PROD_ADRESA", "PROD_ICO", "PROD_PODPISUJICI_JMENO", "PROD_PODPISUJICI_FUNKCE", "PREDMET_DILA", "CENA", "DATUM_PREDANI"]
         }
       },
       "dohoda-o-provedeni-prace": {
@@ -40,9 +44,11 @@ const getTemplateData = (id: string) => {
         schema: {
           type: "object",
           properties: {
-            ZAM_JMENO: { type: "string", title: "Jméno zaměstnavatele" },
+            ZAM_JMENO: { type: "string", title: "Název / jméno zaměstnavatele" },
             ZAM_ADRESA: { type: "string", title: "Adresa zaměstnavatele" },
             ZAM_ICO: { type: "string", title: "IČO zaměstnavatele" },
+            ZAM_PODPISUJICI_JMENO: { type: "string", title: "Podepisující za zaměstnavatele" },
+            ZAM_PODPISUJICI_FUNKCE: { type: "string", title: "Funkce podepisujícího (zaměstnavatel)" },
             PRAC_JMENO: { type: "string", title: "Jméno pracovníka" },
             PRAC_ADRESA: { type: "string", title: "Adresa pracovníka" },
             PRAC_RC: { type: "string", title: "Rodné číslo pracovníka" },
@@ -51,7 +57,7 @@ const getTemplateData = (id: string) => {
             DATUM_OD: { type: "string", title: "Datum od" },
             DATUM_DO: { type: "string", title: "Datum do" }
           },
-          required: ["ZAM_JMENO", "ZAM_ADRESA", "ZAM_ICO", "PRAC_JMENO", "PRAC_ADRESA", "PRAC_RC", "POPIS_PRACE", "ODMENA", "DATUM_OD", "DATUM_DO"]
+          required: ["ZAM_JMENO", "ZAM_ADRESA", "ZAM_ICO", "ZAM_PODPISUJICI_JMENO", "ZAM_PODPISUJICI_FUNKCE", "PRAC_JMENO", "PRAC_ADRESA", "PRAC_RC", "POPIS_PRACE", "ODMENA", "DATUM_OD", "DATUM_DO"]
         }
       },
       "kupni-smlouva": {
@@ -61,17 +67,21 @@ const getTemplateData = (id: string) => {
         schema: {
           type: "object",
           properties: {
-            KUP_JMENO: { type: "string", title: "Jméno kupujícího" },
+            KUP_JMENO: { type: "string", title: "Název / jméno kupujícího" },
             KUP_ADRESA: { type: "string", title: "Adresa kupujícího" },
             KUP_ICO: { type: "string", title: "IČO kupujícího" },
-            PROD_JMENO: { type: "string", title: "Jméno prodávajícího" },
+            KUP_PODPISUJICI_JMENO: { type: "string", title: "Podepisující za kupujícího" },
+            KUP_PODPISUJICI_FUNKCE: { type: "string", title: "Funkce podepisujícího (kupující)" },
+            PROD_JMENO: { type: "string", title: "Název / jméno prodávajícího" },
             PROD_ADRESA: { type: "string", title: "Adresa prodávajícího" },
             PROD_ICO: { type: "string", title: "IČO prodávajícího" },
+            PROD_PODPISUJICI_JMENO: { type: "string", title: "Podepisující za prodávajícího" },
+            PROD_PODPISUJICI_FUNKCE: { type: "string", title: "Funkce podepisujícího (prodávající)" },
             PREDMET_PRODEJE: { type: "string", title: "Předmět prodeje" },
             CENA: { type: "string", title: "Cena" },
             DATUM_PREDANI: { type: "string", title: "Datum předání" }
           },
-          required: ["KUP_JMENO", "KUP_ADRESA", "KUP_ICO", "PROD_JMENO", "PROD_ADRESA", "PROD_ICO", "PREDMET_PRODEJE", "CENA", "DATUM_PREDANI"]
+          required: ["KUP_JMENO", "KUP_ADRESA", "KUP_ICO", "KUP_PODPISUJICI_JMENO", "KUP_PODPISUJICI_FUNKCE", "PROD_JMENO", "PROD_ADRESA", "PROD_ICO", "PROD_PODPISUJICI_JMENO", "PROD_PODPISUJICI_FUNKCE", "PREDMET_PRODEJE", "CENA", "DATUM_PREDANI"]
         }
       },
 

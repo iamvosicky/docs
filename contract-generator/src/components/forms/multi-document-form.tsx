@@ -19,6 +19,7 @@ import { useFormTemplateStore } from "@/lib/form-template-store";
 import { FormTemplate } from "@/types/form-template";
 import { companyFieldMapping } from "@/types/company-profile";
 import { generatePDF, generateDOCX, downloadDocument } from "@/lib/document-generator";
+import { AresLookup, AresExecutive } from "@/components/ares-lookup";
 
 // Define JSON schema property type
 interface JsonSchemaProperty {
@@ -110,6 +111,26 @@ const groupFieldsByPrefix = (properties: Record<string, JsonSchemaProperty>) => 
   });
 
   return groups;
+};
+
+// Returns the IČO field name for a given group prefix, if any
+const getIcoFieldForGroup = (groupKey: string): string | null => {
+  const icoFields: Record<string, string> = {
+    KUP: "KUP_ICO",
+    PROD: "PROD_ICO",
+    ZAM: "ZAM_ICO",
+  };
+  return icoFields[groupKey] ?? null;
+};
+
+// Returns the field names for signatory info in a group
+const getSignatoryFieldsForGroup = (groupKey: string): { name: string; position: string } | null => {
+  const mapping: Record<string, { name: string; position: string }> = {
+    KUP: { name: "KUP_PODPISUJICI_JMENO", position: "KUP_PODPISUJICI_FUNKCE" },
+    PROD: { name: "PROD_PODPISUJICI_JMENO", position: "PROD_PODPISUJICI_FUNKCE" },
+    ZAM: { name: "ZAM_PODPISUJICI_JMENO", position: "ZAM_PODPISUJICI_FUNKCE" },
+  };
+  return mapping[groupKey] ?? null;
 };
 
 // Get human-readable group names
@@ -330,14 +351,44 @@ export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
                   <AccordionContent>
                     {/* Company Profile Selector - only show for company-related groups */}
                     {['KUP', 'PROD', 'ZAM', 'PRAC'].includes(groupKey) && (
-                      <CompanyProfileSelector
-                        groupKey={groupKey}
-                        onSelect={(profileId) => applyCompanyProfile(profileId, groupKey)}
-                      />
+                      <div className="space-y-2 mb-2">
+                        <CompanyProfileSelector
+                          groupKey={groupKey}
+                          onSelect={(profileId) => applyCompanyProfile(profileId, groupKey)}
+                        />
+                        {/* ARES Lookup — shown for groups that have an IČO field */}
+                        {getIcoFieldForGroup(groupKey) && (() => {
+                          const icoField = getIcoFieldForGroup(groupKey)!;
+                          const signatoryFields = getSignatoryFieldsForGroup(groupKey);
+                          return (
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs text-muted-foreground">Automatické doplnění:</span>
+                              <AresLookup
+                                ico={form.watch(icoField) || ""}
+                                onCompanyData={(data) => {
+                                  // Fill company name and address fields
+                                  const nameField = `${groupKey}_JMENO`;
+                                  const addressField = `${groupKey}_ADRESA`;
+                                  const dicField = `${groupKey}_DIC`;
+                                  if (form.getValues(nameField) !== undefined) form.setValue(nameField, data.name);
+                                  if (form.getValues(addressField) !== undefined) form.setValue(addressField, data.address);
+                                  if (data.dic && form.getValues(dicField) !== undefined) form.setValue(dicField, data.dic);
+                                }}
+                                onSignatorySelect={(exec: AresExecutive) => {
+                                  if (!signatoryFields) return;
+                                  form.setValue(signatoryFields.name, exec.name);
+                                  form.setValue(signatoryFields.position, exec.position);
+                                }}
+                              />
+                            </div>
+                          );
+                        })()}
+                      </div>
                     )}
 
+                    {/* Regular fields */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                      {Object.entries(fields).map(([key, value]) => (
+                      {Object.entries(fields).filter(([k]) => !k.includes("PODPISUJICI")).map(([key, value]) => (
                         <FormField
                           key={key}
                           control={form.control}
@@ -348,16 +399,13 @@ export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
                                 <FormLabel>{value.title}</FormLabel>
                                 <div className="flex flex-wrap gap-1 mb-1">
                                   {getTemplateNamesForField(key).map((name, index) => {
-                                    // Assign different colors based on template name or index using Catalyst style
                                     const colorVariants = [
                                       'blue', 'green', 'purple', 'orange',
                                       'teal', 'red', 'amber', 'gray',
                                       'indigo', 'cyan', 'pink', 'lime',
                                       'rose', 'sky', 'emerald', 'violet'
                                     ];
-                                    const colorIndex = index % colorVariants.length;
-                                    const variant = colorVariants[colorIndex] as any;
-
+                                    const variant = colorVariants[index % colorVariants.length] as any;
                                     return (
                                       <Badge key={index} variant={variant} className="text-xs">
                                         {name}
@@ -377,12 +425,6 @@ export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
                                     key.toLowerCase().includes('email') ? 'email' :
                                     key.toLowerCase().includes('phone') ||
                                     key.toLowerCase().includes('telefon') ? 'tel' :
-                                    key.toLowerCase().includes('number') ||
-                                    key.toLowerCase().includes('cislo') ||
-                                    key.toLowerCase().includes('ico') ||
-                                    key.toLowerCase().includes('dic') ? 'number' :
-                                    key.toLowerCase().includes('password') ||
-                                    key.toLowerCase().includes('heslo') ? 'password' :
                                     key.toLowerCase().includes('url') ||
                                     key.toLowerCase().includes('web') ? 'url' :
                                     'text'
@@ -395,6 +437,40 @@ export function MultiDocumentForm({ templates }: MultiDocumentFormProps) {
                         />
                       ))}
                     </div>
+
+                    {/* Signatory fields — shown only when present */}
+                    {Object.keys(fields).some(k => k.includes("PODPISUJICI")) && (
+                      <div className="mt-6">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="h-px flex-1 bg-border" />
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Podpis za právnickou osobu
+                          </span>
+                          <div className="h-px flex-1 bg-border" />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 rounded-lg bg-muted/20 border border-dashed p-4">
+                          {Object.entries(fields).filter(([k]) => k.includes("PODPISUJICI")).map(([key, value]) => (
+                            <FormField
+                              key={key}
+                              control={form.control}
+                              name={key}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <div className="flex flex-col space-y-1">
+                                    <FormLabel>{value.title}</FormLabel>
+                                  </div>
+                                  <FormControl>
+                                    <Input {...field} type="text" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                   </AccordionContent>
                 </AccordionItem>
               );
