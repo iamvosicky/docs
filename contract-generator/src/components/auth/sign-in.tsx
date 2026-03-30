@@ -28,7 +28,7 @@ export function SignIn({ returnUrl = '/' }: SignInProps) {
     e.preventDefault();
 
     if (!email) {
-      toast.error("Please enter your email address");
+      toast.error("Zadejte prosím svou e-mailovou adresu.");
       return;
     }
 
@@ -37,13 +37,13 @@ export function SignIn({ returnUrl = '/' }: SignInProps) {
       const success = await login(email);
 
       if (success) {
-        toast.success("Login successful!");
+        toast.success("Přihlášení proběhlo úspěšně!");
         router.push(returnUrl);
       } else {
-        toast.error("Failed to sign in. Please try again.");
+        toast.error("Přihlášení se nezdařilo. Zkuste to prosím znovu.");
       }
     } catch (error) {
-      toast.error("An error occurred. Please try again.");
+      toast.error("Nastala chyba. Zkuste to prosím znovu.");
     } finally {
       setIsEmailLoading(false);
     }
@@ -53,9 +53,8 @@ export function SignIn({ returnUrl = '/' }: SignInProps) {
     setIsGoogleLoading(true);
     try {
       await loginWithGoogle();
-      // The auth provider will handle the redirect
     } catch (error) {
-      toast.error("Google sign in failed. Please try again.");
+      toast.error("Přihlášení přes Google se nezdařilo. Zkuste to prosím znovu.");
       setIsGoogleLoading(false);
     }
   };
@@ -64,9 +63,8 @@ export function SignIn({ returnUrl = '/' }: SignInProps) {
     setIsAppleLoading(true);
     try {
       await loginWithApple();
-      // The auth provider will handle the redirect
     } catch (error) {
-      toast.error("Apple sign in failed. Please try again.");
+      toast.error("Přihlášení přes Apple se nezdařilo. Zkuste to prosím znovu.");
       setIsAppleLoading(false);
     }
   };
@@ -74,9 +72,9 @@ export function SignIn({ returnUrl = '/' }: SignInProps) {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Sign In</CardTitle>
+        <CardTitle>Přihlásit se</CardTitle>
         <CardDescription>
-          Choose your preferred sign in method
+          Vyberte způsob přihlášení
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -102,7 +100,7 @@ export function SignIn({ returnUrl = '/' }: SignInProps) {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
+                nebo
               </span>
             </div>
           </div>
@@ -111,11 +109,11 @@ export function SignIn({ returnUrl = '/' }: SignInProps) {
           <form onSubmit={handleSignIn}>
             <div className="grid gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">E-mail</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="name@example.com"
+                  placeholder="vas@email.cz"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading || isEmailLoading}
@@ -130,10 +128,10 @@ export function SignIn({ returnUrl = '/' }: SignInProps) {
                 {isEmailLoading ? (
                   <span className="flex items-center justify-center">
                     <LoadingSpinner size="sm" />
-                    <span className="ml-2">Signing in...</span>
+                    <span className="ml-2">Přihlašování…</span>
                   </span>
                 ) : (
-                  "Sign in with Email"
+                  "Přihlásit se e-mailem"
                 )}
               </Button>
             </div>
@@ -142,14 +140,15 @@ export function SignIn({ returnUrl = '/' }: SignInProps) {
       </CardContent>
       <CardFooter className="flex flex-col items-center justify-center text-center">
         <p className="text-sm text-muted-foreground mt-2">
-          By signing in, you agree to our{" "}
+          Přihlášením souhlasíte s{" "}
           <a href="#" className="text-primary underline underline-offset-4 hover:text-primary/90">
-            Terms of Service
+            podmínkami užívání
           </a>{" "}
-          and{" "}
+          a{" "}
           <a href="#" className="text-primary underline underline-offset-4 hover:text-primary/90">
-            Privacy Policy
+            zásadami ochrany osobních údajů
           </a>
+          .
         </p>
       </CardFooter>
     </Card>

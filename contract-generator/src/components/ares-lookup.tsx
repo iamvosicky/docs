@@ -123,23 +123,32 @@ export function AresLookup({ ico, onCompanyData, onSignatorySelect }: AresLookup
     }
   };
 
+  const icoMissing = !ico || ico.replace(/\s/g, "").length < 6;
+
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={handleLookup}
-        disabled={isLoading || !ico}
-        className="gap-1.5 text-xs"
-      >
-        {isLoading ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <Search className="h-3.5 w-3.5" />
+    <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex flex-col gap-0.5">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleLookup}
+          disabled={isLoading || icoMissing}
+          className="gap-1.5 text-xs"
+        >
+          {isLoading ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Search className="h-3.5 w-3.5" />
+          )}
+          Vyhledat v ARES
+        </Button>
+        {icoMissing && (
+          <span className="text-[11px] text-muted-foreground leading-tight">
+            Nejprve vyplňte IČO výše
+          </span>
         )}
-        Vyhledat v ARES
-      </Button>
+      </div>
 
       {fetched && executives.length > 0 && (
         <DropdownMenu>

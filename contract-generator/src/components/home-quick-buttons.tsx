@@ -43,18 +43,18 @@ export function HomeQuickButtons() {
                     variant="default"
                   >
                     <Link href={`/generate?templates=${useCase.templateIds.join(',')}`}>
-                      Vytvořit dokumenty
+                      {useCase.templateIds.length === 1 ? 'Vytvořit dokument' : 'Vytvořit dokumenty'}
                     </Link>
                   </Button>
                 ) : (
                   <Button
                     asChild
                     className="w-full mt-4"
-                    variant="default"
+                    variant="outline"
                   >
                     <Link href={`/login?returnUrl=/generate?templates=${useCase.templateIds.join(',')}`}>
                       <Lock className="h-4 w-4 mr-2" />
-                      Přihlásit se pro vytvoření
+                      Přihlásit se
                     </Link>
                   </Button>
                 )}

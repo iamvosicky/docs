@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="cs" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
       >
@@ -44,15 +44,13 @@ export default function RootLayout({
               <main className="flex-1">{children}</main>
               <footer className="border-t py-6 md:py-8">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                  <div className="flex flex-col sm:flex-row justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
                     <p className="text-sm text-muted-foreground">
-                      &copy; {new Date().getFullYear()} Contract Generator. All rights reserved.
+                      &copy; {new Date().getFullYear()} Contract Generator
                     </p>
-                    <div className="mt-4 sm:mt-0">
-                      <p className="text-sm text-muted-foreground">
-                        Powered by Next.js and Cloudflare
-                      </p>
-                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Generátor právních dokumentů — pouze pro informační účely, nenahrazuje právní poradenství
+                    </p>
                   </div>
                 </div>
               </footer>

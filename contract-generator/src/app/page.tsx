@@ -30,11 +30,11 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button asChild size="lg" className="shadow-sm">
-                <Link href={isAuthenticated ? "/generate" : "/login?returnUrl=/generate"}>
+                <a href="#dokumenty">
                   <FileText className="mr-2 h-5 w-5" />
-                  Generovat dokument
+                  Procházet dokumenty
                   <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+                </a>
               </Button>
               {!isAuthenticated && (
                 <Button asChild size="lg" variant="outline">
@@ -131,7 +131,7 @@ export default function Home() {
           </section>
 
           {/* Documents Section */}
-          <section>
+          <section id="dokumenty">
             <div className="flex items-end justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold">Jednotlivé dokumenty</h2>
